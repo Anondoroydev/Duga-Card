@@ -215,6 +215,10 @@ app.get("/api/cards/:id", (req, res) => {
   res.json({ success: true, card });
 });
 
+// Serve static audio assets with proper MIME types and range request support
+app.use('/audio', express.static(path.join(process.cwd(), 'public/audio')));
+app.use(express.static(path.join(process.cwd(), 'public')));
+
 async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

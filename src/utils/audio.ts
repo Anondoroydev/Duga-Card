@@ -1,8 +1,26 @@
-// Web Audio API helper for authentic, sweet Bengali Dhaak, Shankho and festive melodies
-let bgmInterval: any = null;
-let bgmContext: AudioContext | null = null;
+// Authentic Bengali Durga Puja Audio Engine
+// Features original recorded Dhaak (ঢাক), Shankh (শাঁখ), and Mahalaya/Devi Vandana BGM (মহালয়া ও আগমনী গান)
+// Strictly enforces single, exclusive audio playback: Only one sound/track plays at a time.
 
-// Helper to get or create clean AudioContext
+export type ActiveSoundType = 'bgm' | 'dhaak' | 'shankh' | null;
+
+let bgmAudio: HTMLAudioElement | null = null;
+let dhaakAudio: HTMLAudioElement | null = null;
+let shankhAudio: HTMLAudioElement | null = null;
+let shortAudio: HTMLAudioElement | null = null;
+
+let isBgmActive = false;
+let currentTrack: 'mahalaya' | 'dhaak' = 'mahalaya';
+let activeSound: ActiveSoundType = null;
+
+const TRACK_PATHS = {
+  mahalaya: '/audio/festive_bgm.mp3',
+  dhaak: '/audio/dhaak.mp3',
+  dhaakShort: '/audio/dhaak_short.mp3',
+  shankh: '/audio/shankh.mp3'
+};
+
+// Fallback Web Audio API synthesizer in case external audio is blocked
 function getAudioContext(): AudioContext | null {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -13,201 +31,302 @@ function getAudioContext(): AudioContext | null {
   }
 }
 
-/**
- * Creates a single warm Dhaak bass stroke ("Dhum")
- */
-function playDhaakBass(ctx: AudioContext, time: number, intensity: number = 0.25) {
+function playSynthesizedDhaak() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+
+  // Rim strike
+  const rimOsc = ctx.createOscillator();
+  const rimGain = ctx.createGain();
+  rimOsc.type = 'triangle';
+  rimOsc.frequency.setValueAtTime(680, now);
+  rimGain.gain.setValueAtTime(0.15, now);
+  rimGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+  rimOsc.connect(rimGain);
+  rimGain.connect(ctx.destination);
+  rimOsc.start(now);
+  rimOsc.stop(now + 0.09);
+
+  // Bass thump
+  const bassOsc = ctx.createOscillator();
+  const bassGain = ctx.createGain();
+  bassOsc.type = 'sine';
+  bassOsc.frequency.setValueAtTime(120, now + 0.05);
+  bassOsc.frequency.exponentialRampToValueAtTime(55, now + 0.25);
+  bassGain.gain.setValueAtTime(0.25, now + 0.05);
+  bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+  bassOsc.connect(bassGain);
+  bassGain.connect(ctx.destination);
+  bassOsc.start(now + 0.05);
+  bassOsc.stop(now + 0.36);
+}
+
+function playSynthesizedShankh() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-
   osc.type = 'sine';
-  osc.frequency.setValueAtTime(130, time);
-  osc.frequency.exponentialRampToValueAtTime(52, time + 0.18);
-
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(260, time);
-
-  gain.gain.setValueAtTime(0.001, time);
-  gain.gain.linearRampToValueAtTime(intensity, time + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
-
-  osc.connect(filter);
-  filter.connect(gain);
+  osc.frequency.setValueAtTime(420, now);
+  osc.frequency.exponentialRampToValueAtTime(460, now + 0.4);
+  gain.gain.setValueAtTime(0.01, now);
+  gain.gain.linearRampToValueAtTime(0.2, now + 0.4);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+  osc.connect(gain);
   gain.connect(ctx.destination);
-
-  osc.start(time);
-  osc.stop(time + 0.36);
+  osc.start(now);
+  osc.stop(now + 1.8);
 }
 
 /**
- * Creates a crisp bamboo stick rim strike ("Kathi / Tak")
+ * Stops all currently playing audio sources except the specified one.
+ * Ensures strictly one audio plays at any time.
  */
-function playDhaakKathi(ctx: AudioContext, time: number, intensity: number = 0.12) {
-  // Resonant wooden tap
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
+export function stopAllAudio(except?: ActiveSoundType) {
+  // Stop BGM if not exempt
+  if (except !== 'bgm') {
+    if (bgmAudio) {
+      bgmAudio.pause();
+    }
+    isBgmActive = false;
+  }
 
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(720, time);
-  osc.frequency.exponentialRampToValueAtTime(320, time + 0.04);
+  // Stop Dhaak if not exempt
+  if (except !== 'dhaak') {
+    if (dhaakAudio) {
+      dhaakAudio.pause();
+      dhaakAudio.currentTime = 0;
+    }
+    if (shortAudio) {
+      shortAudio.pause();
+      shortAudio.currentTime = 0;
+    }
+  }
 
-  filter.type = 'bandpass';
-  filter.frequency.setValueAtTime(680, time);
-  filter.Q.setValueAtTime(3, time);
+  // Stop Shankh if not exempt
+  if (except !== 'shankh') {
+    if (shankhAudio) {
+      shankhAudio.pause();
+      shankhAudio.currentTime = 0;
+    }
+  }
 
-  gain.gain.setValueAtTime(0.001, time);
-  gain.gain.linearRampToValueAtTime(intensity, time + 0.003);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.06);
-
-  osc.connect(filter);
-  filter.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.start(time);
-  osc.stop(time + 0.07);
+  activeSound = except || null;
+  notifySoundStateChange();
 }
 
 /**
- * Authentic, sweet festive Bengali Dhaak rhythm:
- * Plays the iconic "Tak... Tak... Dhin... Dha!" festive cadence
+ * Plays the original live Durga Puja Dhaak beats exclusively.
+ * If already playing, clicking again stops it (toggle behavior).
  */
 export function playDhaakSound() {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  const now = ctx.currentTime;
-
-  // Pattern: Kathi tap, Kathi tap, warm Bass, festive resonance
-  playDhaakKathi(ctx, now, 0.14);
-  playDhaakKathi(ctx, now + 0.11, 0.16);
-  playDhaakBass(ctx, now + 0.22, 0.28);
-  playDhaakKathi(ctx, now + 0.33, 0.15);
-  playDhaakBass(ctx, now + 0.44, 0.32);
-}
-
-/**
- * Divine, smooth sacred Shankho (Conch Shell) sound
- * Replaced harsh buzz with pure sacred breath resonance & gentle swell
- */
-export function playShankhoSound() {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  const now = ctx.currentTime;
-
-  // Master gain
-  const masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(0.001, now);
-  // Gentle natural breath attack
-  masterGain.gain.linearRampToValueAtTime(0.18, now + 0.4);
-  masterGain.gain.linearRampToValueAtTime(0.2, now + 0.8);
-  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
-  masterGain.connect(ctx.destination);
-
-  // Fundamental frequency
-  const oscFundamental = ctx.createOscillator();
-  oscFundamental.type = 'sine';
-  oscFundamental.frequency.setValueAtTime(415, now);
-  oscFundamental.frequency.exponentialRampToValueAtTime(466, now + 0.4);
-  oscFundamental.frequency.exponentialRampToValueAtTime(440, now + 1.2);
-
-  // Soft overtone
-  const oscOvertone = ctx.createOscillator();
-  const overtoneGain = ctx.createGain();
-  oscOvertone.type = 'sine';
-  oscOvertone.frequency.setValueAtTime(830, now);
-  oscOvertone.frequency.exponentialRampToValueAtTime(932, now + 0.4);
-  oscOvertone.frequency.exponentialRampToValueAtTime(880, now + 1.2);
-  overtoneGain.gain.setValueAtTime(0.06, now);
-
-  // Gentle vibrato (LFO) for human breath feel
-  const lfo = ctx.createOscillator();
-  const lfoGain = ctx.createGain();
-  lfo.frequency.setValueAtTime(4.5, now);
-  lfoGain.gain.setValueAtTime(4, now);
-  lfo.connect(oscFundamental.frequency);
-
-  // Lowpass filter to ensure silky warmth
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(950, now);
-
-  oscFundamental.connect(filter);
-  oscOvertone.connect(overtoneGain);
-  overtoneGain.connect(filter);
-  filter.connect(masterGain);
-
-  lfo.start(now);
-  oscFundamental.start(now);
-  oscOvertone.start(now);
-
-  lfo.stop(now + 1.8);
-  oscFundamental.stop(now + 1.8);
-  oscOvertone.stop(now + 1.8);
-}
-
-/**
- * Sweet celebratory Dhaak beat for blessing/flower shower
- */
-export function playDhaakBeat() {
-  playDhaakSound();
-}
-
-/**
- * Gentle festive BGM - soft temple Santoor / Tanpura tones
- */
-export function toggleFestiveBGM(isPlaying: boolean) {
   try {
-    const ctx = getAudioContext();
-    if (!ctx) return;
+    // If Dhaak is currently playing, toggle it off
+    if (dhaakAudio && !dhaakAudio.paused) {
+      stopAllAudio(null);
+      return;
+    }
 
-    if (isPlaying) {
-      if (bgmInterval) return;
-      bgmContext = ctx;
-      
-      // Sweet pentatonic Indian classical raag notes (Bhairavi / Durga)
-      const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-      let noteIdx = 0;
+    // Stop all other audio (BGM, Shankh)
+    stopAllAudio('dhaak');
 
-      bgmInterval = setInterval(() => {
-        if (!bgmContext) return;
-        const now = bgmContext.currentTime;
+    if (!dhaakAudio) {
+      dhaakAudio = new Audio(TRACK_PATHS.dhaak);
+      dhaakAudio.volume = 0.85;
+      dhaakAudio.addEventListener('ended', () => {
+        if (activeSound === 'dhaak') {
+          activeSound = null;
+          notifySoundStateChange();
+        }
+      });
+    }
+    dhaakAudio.currentTime = 0;
+    activeSound = 'dhaak';
+    notifySoundStateChange();
 
-        const osc = bgmContext.createOscillator();
-        const gain = bgmContext.createGain();
-        const filter = bgmContext.createBiquadFilter();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(notes[noteIdx], now);
-        noteIdx = (noteIdx + 1) % notes.length;
-
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(650, now);
-
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.04, now + 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(bgmContext.destination);
-
-        osc.start(now);
-        osc.stop(now + 1.5);
-      }, 1400);
-    } else {
-      if (bgmInterval) {
-        clearInterval(bgmInterval);
-        bgmInterval = null;
-      }
-      if (bgmContext) {
-        bgmContext.close();
-        bgmContext = null;
-      }
+    const promise = dhaakAudio.play();
+    if (promise) {
+      promise.catch((err) => {
+        console.warn("Real Dhaak audio playback note:", err);
+        playSynthesizedDhaak();
+      });
     }
   } catch (e) {
-    console.log("BGM toggle failed", e);
+    playSynthesizedDhaak();
+  }
+}
+
+/**
+ * Plays short authentic Dhaak beat (ideal for flower shower & celebration).
+ * Stops other sounds so it is heard clearly.
+ */
+export function playDhaakBeat() {
+  try {
+    stopAllAudio('dhaak');
+
+    if (!shortAudio) {
+      shortAudio = new Audio(TRACK_PATHS.dhaakShort);
+      shortAudio.volume = 0.75;
+      shortAudio.addEventListener('ended', () => {
+        if (activeSound === 'dhaak') {
+          activeSound = null;
+          notifySoundStateChange();
+        }
+      });
+    }
+    shortAudio.currentTime = 0;
+    activeSound = 'dhaak';
+    notifySoundStateChange();
+
+    const promise = shortAudio.play();
+    if (promise) {
+      promise.catch(() => playSynthesizedDhaak());
+    }
+  } catch (e) {
+    playSynthesizedDhaak();
+  }
+}
+
+/**
+ * Plays the original authentic sacred Shankho (conch shell horn) sound exclusively.
+ * If already playing, clicking again stops it.
+ */
+export function playShankhoSound() {
+  try {
+    // If Shankh is currently playing, toggle it off
+    if (shankhAudio && !shankhAudio.paused) {
+      stopAllAudio(null);
+      return;
+    }
+
+    // Stop all other audio (BGM, Dhaak)
+    stopAllAudio('shankh');
+
+    if (!shankhAudio) {
+      shankhAudio = new Audio(TRACK_PATHS.shankh);
+      shankhAudio.volume = 0.85;
+      shankhAudio.addEventListener('ended', () => {
+        if (activeSound === 'shankh') {
+          activeSound = null;
+          notifySoundStateChange();
+        }
+      });
+    }
+    shankhAudio.currentTime = 0;
+    activeSound = 'shankh';
+    notifySoundStateChange();
+
+    const promise = shankhAudio.play();
+    if (promise) {
+      promise.catch((err) => {
+        console.warn("Real Shankh audio playback note:", err);
+        playSynthesizedShankh();
+      });
+    }
+  } catch (e) {
+    playSynthesizedShankh();
+  }
+}
+
+/**
+ * Toggles or plays the original festive background music (মহালয়া / দুর্গাপূজা আবহ সঙ্গীত).
+ * Stops any Dhaak or Shankh playing before starting BGM.
+ */
+export function toggleFestiveBGM(isPlaying: boolean, trackName?: 'mahalaya' | 'dhaak') {
+  try {
+    if (trackName && trackName !== currentTrack) {
+      currentTrack = trackName;
+      if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio = null;
+      }
+    }
+
+    if (isPlaying) {
+      // Exclusively stop any other audio before starting BGM
+      stopAllAudio('bgm');
+
+      if (!bgmAudio) {
+        bgmAudio = new Audio(TRACK_PATHS[currentTrack]);
+        bgmAudio.loop = true;
+        bgmAudio.volume = currentTrack === 'dhaak' ? 0.6 : 0.45;
+      }
+      isBgmActive = true;
+      activeSound = 'bgm';
+      notifySoundStateChange();
+
+      const promise = bgmAudio.play();
+      if (promise) {
+        promise.then(() => {
+          isBgmActive = true;
+          activeSound = 'bgm';
+          notifySoundStateChange();
+        }).catch((err) => {
+          console.warn("BGM autoplay policy note:", err);
+          isBgmActive = false;
+          activeSound = null;
+          notifySoundStateChange();
+        });
+      }
+    } else {
+      stopAllAudio(null);
+    }
+  } catch (e) {
+    console.warn("Toggle BGM error:", e);
+    stopAllAudio(null);
+  }
+}
+
+/**
+ * Change the active background music track
+ */
+export function setBGMTrack(trackName: 'mahalaya' | 'dhaak') {
+  const wasPlaying = isBgmActive;
+  currentTrack = trackName;
+  if (bgmAudio) {
+    bgmAudio.pause();
+    bgmAudio = null;
+  }
+  if (wasPlaying) {
+    toggleFestiveBGM(true, trackName);
+  } else {
+    notifySoundStateChange();
+  }
+}
+
+export function getCurrentBGMTrack(): 'mahalaya' | 'dhaak' {
+  return currentTrack;
+}
+
+export function getActiveSound(): ActiveSoundType {
+  return activeSound;
+}
+
+export function isFestiveBGMPlaying(): boolean {
+  return isBgmActive && !!bgmAudio && !bgmAudio.paused;
+}
+
+function notifySoundStateChange() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('festive-sound-update', {
+        detail: {
+          activeSound,
+          isBgmActive,
+          track: currentTrack,
+        }
+      })
+    );
+    // Legacy event for existing listeners
+    window.dispatchEvent(
+      new CustomEvent('festive-bgm-update', {
+        detail: {
+          isPlaying: isBgmActive,
+          track: currentTrack,
+        }
+      })
+    );
   }
 }

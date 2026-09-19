@@ -41,7 +41,8 @@ const THEMES: Record<string, { bg: string; cardBg: string; badge: string }> = {
 
 export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onReset, onPostToWall }) => {
   const [isOpened, setIsOpened] = useState(false);
-  const [isSindoorBursting, setIsSindoorBursting] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
+  const [openingPhase, setOpeningPhase] = useState<'closed' | 'flap' | 'slide' | 'reveal'>('closed');
   const [replyMessage, setReplyMessage] = useState('');
   const [replySender, setReplySender] = useState('');
   const [replied, setReplied] = useState(false);
@@ -59,13 +60,28 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
   };
 
   const handleOpenCard = () => {
-    setIsSindoorBursting(true);
+    if (isOpening || isOpened) return;
+    setIsOpening(true);
+    setOpeningPhase('flap');
     playShankhoSound();
-    triggerFlowerBlessing();
+
+    // Stage 1: Envelope top flap slowly unfolds (1.4s)
+    setTimeout(() => {
+      setOpeningPhase('slide');
+      triggerFlowerBlessing();
+    }, 1400);
+
+    // Stage 2: Letter card slowly slides out of envelope (1.8s)
+    setTimeout(() => {
+      setOpeningPhase('reveal');
+    }, 3200);
+
+    // Stage 3: Smooth transition into revealed card view
     setTimeout(() => {
       setIsOpened(true);
-      setIsSindoorBursting(false);
-    }, 1100);
+      setIsOpening(false);
+      setOpeningPhase('closed');
+    }, 4000);
   };
 
   const handleSendReply = (e: React.FormEvent) => {
@@ -83,22 +99,34 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
       <div className="absolute top-10 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Sindoor Burst / Opening Animation Overlay */}
+      {/* Gentle Opening Aura / Divine Blessing Indicator */}
       <AnimatePresence>
-        {isSindoorBursting && (
+        {isOpening && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.2 }}
-            animate={{ opacity: 1, scale: 2.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none bg-gradient-to-tr from-red-600 via-orange-500 to-amber-500 bg-opacity-95 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none bg-gradient-to-t from-red-950/80 via-amber-950/60 to-stone-950/90 backdrop-blur-sm"
           >
-            <div className="text-center space-y-4 p-8">
-              <div className="text-6xl animate-bounce">🔴✨</div>
-              <h2 className="text-3xl sm:text-5xl font-extrabold font-serif text-white tracking-widest drop-shadow-lg">
-                সিঁদুর আশীর্বাদ ও শাঁখ ধ্বনি...
-              </h2>
-              <p className="text-amber-100 text-lg font-serif">আপনার জন্য শারদীয়ার পবিত্র চিঠি খোলা হচ্ছে!</p>
+            <div className="text-center space-y-3 p-6 max-w-md mx-auto bg-stone-950/80 border border-amber-400/40 rounded-3xl shadow-2xl">
+              <div className="text-5xl animate-pulse">🪷✨</div>
+              <h3 className="text-xl sm:text-2xl font-extrabold font-serif text-amber-200">
+                {openingPhase === 'flap' && 'পবিত্র খামের সীল খোলা হচ্ছে...'}
+                {openingPhase === 'slide' && 'ধীরে ধীরে বেরিয়ে আসছে আপনার চিঠি...'}
+                {openingPhase === 'reveal' && 'শারদীয় আশীর্বাদ প্রকাশ পাচ্ছে...'}
+              </h3>
+              <p className="text-xs text-amber-300/80 font-serif">শাঁখের ধ্বনি ও পুষ্পাঞ্জলি আশীর্বাদের সাথে শুভ আগমনী...</p>
+              
+              {/* Slow progress line */}
+              <div className="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-amber-500/30">
+                <motion.div
+                  initial={{ width: '0%' }}
+                  animate={{ width: openingPhase === 'flap' ? '33%' : openingPhase === 'slide' ? '70%' : '100%' }}
+                  transition={{ duration: 1.3, ease: "easeInOut" }}
+                  className="h-full bg-gradient-to-r from-amber-500 to-red-500 shadow-sm"
+                />
+              </div>
             </div>
           </motion.div>
         )}
@@ -120,40 +148,71 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
         </div>
 
         {!isOpened ? (
-          /* Letter Box / Envelope View with Glass Finish */
+          /* Envelope View with Slow 3D Unfolding & Card Slide Animation */
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="bg-stone-950/20 hover:bg-stone-950/25 backdrop-blur-md border-2 border-amber-400/40 rounded-3xl p-8 sm:p-12 shadow-2xl text-center space-y-6 relative overflow-hidden ring-4 ring-amber-500/20 group cursor-pointer"
+            transition={{ duration: 0.8 }}
+            className="bg-stone-950/30 hover:bg-stone-950/40 backdrop-blur-md border-2 border-amber-400/50 rounded-3xl p-6 sm:p-10 shadow-2xl text-center space-y-6 relative overflow-hidden ring-4 ring-amber-500/20 group cursor-pointer"
+            style={{ perspective: '1200px' }}
             onClick={handleOpenCard}
           >
             <div className="absolute top-3 left-3 text-amber-400 text-sm">🪷</div>
             <div className="absolute top-3 right-3 text-amber-400 text-sm">🪷</div>
 
-            <div className="w-20 h-20 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center shadow-lg shadow-red-900/55 group-hover:scale-110 transition-transform">
-              <Mail className="w-10 h-10 text-amber-300 animate-bounce" />
+            {/* Simulated Envelope Outer Container */}
+            <div className="relative w-full max-w-md mx-auto bg-gradient-to-br from-red-950/60 via-stone-900/80 to-amber-950/60 border border-amber-400/40 rounded-2xl p-6 shadow-2xl overflow-hidden">
+              
+              {/* Top Envelope Flap (3D Flip Animation) */}
+              <motion.div
+                initial={{ rotateX: 0 }}
+                animate={{ rotateX: isOpening ? -180 : 0 }}
+                transition={{ duration: 1.4, ease: [0.25, 1, 0.5, 1] }}
+                style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
+                className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-amber-600/40 via-red-900/60 to-transparent border-b border-amber-400/50 rounded-t-2xl z-20 pointer-events-none flex items-center justify-center"
+              >
+                {!isOpening && (
+                  <div className="w-12 h-12 rounded-full bg-amber-500/30 border-2 border-amber-300 flex items-center justify-center shadow-lg shadow-red-950/80">
+                    <span className="text-xl">🔴</span>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Letter Card sliding out slowly */}
+              <motion.div
+                animate={{
+                  y: openingPhase === 'slide' || openingPhase === 'reveal' ? -90 : 0,
+                  scale: openingPhase === 'slide' || openingPhase === 'reveal' ? 1.03 : 0.95,
+                }}
+                transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+                className="bg-gradient-to-br from-amber-950/80 via-red-950/70 to-stone-900/90 border border-amber-400/60 rounded-xl p-5 shadow-xl relative z-10 space-y-3"
+              >
+                <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center shadow-md">
+                  <Mail className="w-8 h-8 text-amber-300 animate-bounce" />
+                </div>
+
+                <div className="space-y-1">
+                  <span className="inline-block px-3 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/40">
+                    🌸 পবিত্র শারদীয়া খাম
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-amber-200">
+                    {cardData.from} এর পক্ষ থেকে বিশেষ চিঠি!
+                  </h2>
+                  <p className="text-xs text-amber-300/80">প্রাপক: <span className="font-bold text-white">{cardData.to}</span></p>
+                </div>
+              </motion.div>
             </div>
 
-            <div className="space-y-2">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/40">
-                🌸 একটি বিশেষ চিঠি এসেছে
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold font-serif text-amber-200">
-                {cardData.from} এর পক্ষ থেকে শারদীয়ার শুভেচ্ছা!
-              </h2>
-              <p className="text-xs text-amber-300/80">প্রাপক: <span className="font-bold text-white">{cardData.to}</span></p>
-            </div>
-
-            <div className="bg-stone-950/40 backdrop-blur-sm p-4 rounded-2xl border border-amber-500/30 text-xs text-amber-200/90 italic font-serif">
-              "চিঠিটি খুলতে নিচের বাটনে ক্লিক করুন..."
+            <div className="bg-stone-950/50 backdrop-blur-sm p-3.5 rounded-2xl border border-amber-500/30 text-xs text-amber-200/90 italic font-serif">
+              {isOpening ? "ধীরে ধীরে চিঠিটি প্রকাশ পাচ্ছে..." : "চিঠিটি আবেশে খুলতে নিচের বাটনে স্পর্শ করুন..."}
             </div>
 
             <button
               onClick={handleOpenCard}
-              className="w-full bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 hover:from-amber-400 hover:to-red-500 text-stone-950 font-bold py-4 px-8 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl shadow-red-950/60 transition-all transform hover:scale-105 active:scale-95 border border-amber-300"
+              disabled={isOpening}
+              className="w-full bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 hover:from-amber-400 hover:to-red-500 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl shadow-red-950/60 transition-all transform hover:scale-105 active:scale-95 border border-amber-300 disabled:opacity-75"
             >
-              <Sparkles className="w-5 h-5" /> চিঠি খুলুন (Open with Sindoor Blessing)
+              <Sparkles className="w-5 h-5" /> {isOpening ? "ধীরে ধীরে খোলা হচ্ছে..." : "চিঠি খুলুন (ধীরে ধীরে আনফোল্ডিং)"}
             </button>
           </motion.div>
         ) : (
@@ -170,9 +229,9 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
 
             {/* The Greeting Card with Floating Motion & Glowing Aura */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.92, y: 25 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               className="relative group"
             >
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-amber-500/30 via-yellow-400/50 to-red-500/30 blur-xl opacity-85 group-hover:opacity-100 transition duration-1000 animate-pulse pointer-events-none" />

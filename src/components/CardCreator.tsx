@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Send, Copy, Check, Share2, Wand2, RefreshCw, MessageCircle, Heart, Image as ImageIcon, Volume2, Bell } from 'lucide-react';
 import { GreetingCardData } from '../types';
-import { playDhaakBeat, playDhaakSound, playShankhoSound } from '../utils/audio';
+import { playDhaakBeat, playDhaakSound, playShankhoSound, getActiveSound, ActiveSoundType } from '../utils/audio';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { DURGA_IMAGES } from '../data/durgaImages';
@@ -67,6 +67,21 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
   const [tinyUrlLink, setTinyUrlLink] = useState('');
   const [isCreatingShortLink, setIsCreatingShortLink] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Single page mobile display control
+  const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
+  const [activeSound, setActiveSound] = useState<ActiveSoundType>(getActiveSound());
+
+  useEffect(() => {
+    const handleSoundUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ activeSound: ActiveSoundType }>;
+      if (customEvent.detail) {
+        setActiveSound(customEvent.detail.activeSound);
+      }
+    };
+    window.addEventListener('festive-sound-update', handleSoundUpdate);
+    return () => window.removeEventListener('festive-sound-update', handleSoundUpdate);
+  }, []);
 
   const currentThemeObj = THEMES.find(t => t.id === selectedTheme) || THEMES[0];
 
@@ -157,6 +172,8 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
       // Keep fallback query link if request fails
     } finally {
       setIsCreatingShortLink(false);
+      // Automatically switch to 1-page preview on mobile so user sees the complete card
+      setMobileView('preview');
     }
   };
 
@@ -175,7 +192,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto h-full max-h-full flex flex-col justify-center min-h-0 py-0.5">
-      {/* Sleek Compact Header Bar (replaces heavy banner to save screen height) */}
+      {/* Sleek Compact Header Bar */}
       <div className="flex items-center justify-between mb-2 shrink-0 px-1">
         <div className="flex items-center gap-2">
           <span className="text-sm sm:text-base font-serif font-bold text-amber-200 flex items-center gap-1.5">
@@ -190,13 +207,41 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
         </span>
       </div>
 
+      {/* Mobile Screen Switcher: lets phone users switch between Edit Form and 1-Page Card View */}
+      <div className="flex lg:hidden items-center justify-between p-1 bg-stone-900/90 border border-amber-500/30 rounded-xl mb-2 gap-1.5 shadow-md shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileView('edit')}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-serif font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'edit'
+              ? 'bg-gradient-to-r from-amber-500 to-red-600 text-white shadow-sm'
+              : 'text-amber-200/80 hover:text-white'
+          }`}
+        >
+          <Wand2 className="w-3.5 h-3.5" /> ✍️ কার্ডের তথ্য সাজান
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView('preview')}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-serif font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'preview'
+              ? 'bg-gradient-to-r from-amber-500 to-red-600 text-white shadow-sm'
+              : 'text-amber-200/80 hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5" /> 👁️ ফোনে ১ পেজে কার্ড দেখুন
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 items-stretch overflow-hidden">
         {/* Transparent Glass Form Section - Compact & non-overflowing */}
         <motion.div 
           initial={{ opacity: 0, x: -15 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:col-span-7 bg-stone-950/35 hover:bg-stone-950/40 border border-amber-400/30 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md text-amber-100 flex flex-col justify-between overflow-y-auto max-h-full relative"
+          className={`lg:col-span-7 bg-stone-950/35 hover:bg-stone-950/40 border border-amber-400/30 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md text-amber-100 flex flex-col justify-between overflow-y-auto max-h-full relative ${
+            mobileView === 'preview' ? 'hidden lg:flex' : 'flex'
+          }`}
         >
           {/* Subtle Ambient Glow */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -557,10 +602,18 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
                     <button
                       type="button"
                       onClick={() => { playDhaakSound(); }}
-                      className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-3 py-1 rounded-full text-[11px] font-serif border border-amber-400/40 transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-sm"
-                      title="মধুর ঢাকের আওয়াজ শুনুন"
+                      className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2.5 py-1 rounded-full text-[11px] font-serif border border-amber-400/40 transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-sm"
+                      title="আসল লাইভ ঢাকের বোল শুনুন"
                     >
-                      <Volume2 className="w-3 h-3 text-amber-300" /> 🥁 ঢাকের আওয়াজ
+                      <Volume2 className="w-3 h-3 text-amber-300" /> 🥁 ঢাক
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { playShankhoSound(); }}
+                      className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2.5 py-1 rounded-full text-[11px] font-serif border border-amber-400/40 transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-sm"
+                      title="পবিত্র শাঁখের ধ্বনি"
+                    >
+                      <Bell className="w-3 h-3 text-amber-300" /> 🐚 শাঁখ
                     </button>
                   </div>
                 </div>

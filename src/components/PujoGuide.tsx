@@ -7,8 +7,8 @@ export const PujoGuide: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    // Target date approx: Oct 18, 2026 Maha Sasthi
-    const targetDate = new Date('2026-10-18T00:00:00');
+    // Target date: Oct 17, 2026 Maha Sasthi
+    const targetDate = new Date('2026-10-17T00:00:00');
 
     const updateCountdown = () => {
       const now = new Date();
@@ -30,11 +30,36 @@ export const PujoGuide: React.FC = () => {
   }, []);
 
   const PUJO_DAYS = [
-    { name: "মহাষष्ठी (Maha Sasthi)", date: "১৮ অক্টোবর ২০২৬", desc: "বোধন, আমন্ত্রণ ও অধিবাসের মাধ্যমে মা দুর্গার আবাহন।" },
-    { name: "মহাসপ্তমী (Maha Saptami)", date: "১৯ অক্টোবর ২০২৬", desc: "নবপত্রিকা প্রবেশ ও স্থাপন, দেবীর সপ্তমী পূজা।" },
-    { name: "মহাঅষ্টমী (Maha Ashtami)", date: "২০ অক্টোবর ২০২৬", desc: "কুমারী পূজা, মহাঅষ্টমীর অঞ্জলি ও সন্ধিপূজা।" },
-    { name: "মহানবমী (Maha Navami)", date: "২১ অক্টোবর ২০২৬", desc: "মহানবমী পূজা, হোম ও অঞ্জলি প্রদান।" },
-    { name: "বিজয়া দশমী (Bijoya Dashami)", date: "২২ অক্টোবর ২০২৬", desc: "দর্পণ বিসর্জন, সিঁদুর খেলা ও প্রতিমা বিসর্জন।" }
+    { 
+      name: "মহাষষ্ঠী (Maha Sasthi)", 
+      date: "১৭ অক্টোবর ২০২৬ (শনিবার)", 
+      desc: "সায়ংকালে দেবীর বোধন, আমন্ত্রণ ও অধিবাসের মাধ্যমে মা দুর্গার আবাহন।" 
+    },
+    { 
+      name: "মহাসপ্তমী - ১ম দিন (Maha Saptami Day 1)", 
+      date: "১৭ অক্টোবর ২০২৬ (অপরাহ্ন)", 
+      desc: "সপ্তমী তিথি প্রবেশ, পূর্বাহ্ন কল্পারম্ভ ও সপ্তমী ব্রত সূচনা।" 
+    },
+    { 
+      name: "মহাসপ্তমী - ২য় দিন (Maha Saptami Day 2)", 
+      date: "১৮ অক্টোবর ২০২৬ (রবিবার)", 
+      desc: "নবপত্রিকা (কলাবউ) স্নান ও প্রবেশ, মহাসপ্তমী বিহিত পূজা ও মহা আরতি।" 
+    },
+    { 
+      name: "মহাঅষ্টমী (Maha Ashtami)", 
+      date: "১৯ অক্টোবর ২০২৬ (সোমবার)", 
+      desc: "মহাঅষ্টমীর পুষ্পাঞ্জলি, কুমারী পূজা ও মহা সন্ধিপূজা।" 
+    },
+    { 
+      name: "মহানবমী (Maha Navami)", 
+      date: "২০ অক্টোবর ২০২৬ (মঙ্গলবার)", 
+      desc: "মহানবমী পূজা, নবমী হোম ও বিশেষ অঞ্জলি প্রদান।" 
+    },
+    { 
+      name: "বিজয়া দশমী (Bijoya Dashami)", 
+      date: "২১ অক্টোবর ২০২৬ (বুধবার)", 
+      desc: "দর্পণ বিসর্জন, অপরাজিতা পূজা, সিঁদুর খেলা ও প্রতিমা বিসর্জন।" 
+    }
   ];
 
   return (
@@ -102,9 +127,14 @@ export const PujoGuide: React.FC = () => {
 
       {/* Pujo Days Schedule */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold font-serif text-amber-300 mb-6 flex items-center gap-2 border-b border-amber-400/25 pb-3">
-          <Calendar className="w-5 h-5 text-amber-400" /> দুর্গোৎসব ২০২৬ এর দিনপঞ্জি
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-400/25 pb-3 mb-6">
+          <h3 className="text-xl font-bold font-serif text-amber-300 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-amber-400" /> দুর্গোৎসব ২০২৬ এর দিনপঞ্জি
+          </h3>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-400/40 w-fit shadow-sm">
+            ✨ সপ্তমী তিথি বিস্তার: ২ দিনব্যাপী পূজা (১ম ও ২য় দিন)
+          </span>
+        </div>
 
         <div className="grid grid-cols-1 gap-4">
           {PUJO_DAYS.map((day, idx) => (
