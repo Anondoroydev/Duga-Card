@@ -1,0 +1,6 @@
+{
+  "name": "Durga Puja Greetings",
+  "description": "Create and share personalized Durga Puja greeting cards and wishes with friends and family.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
