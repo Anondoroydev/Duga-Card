@@ -4,6 +4,11 @@ import { playDhaakSound, playShankhoSound, playDhaakBeat } from '../utils/audio'
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
+import whitePigeonImg from '../assets/images/white_pigeon_bird_1789841410480.jpg';
+import colorfulBirdImg from '../assets/images/colorful_bird_1789841425106.jpg';
+
+const animatedBirdGif = 'https://cdn.pixabay.com/animation/2024/01/18/16/30/16-30-44-408_512.gif';
+
 interface SharedCardViewProps {
   cardData: {
     from: string;
@@ -39,10 +44,92 @@ const THEMES: Record<string, { bg: string; cardBg: string; badge: string }> = {
   }
 };
 
+/* Pure Flying Doves Component (Always on screen: extra large, never clipped, continuous tugging during 10s opening) */
+const LovelyBirdsScene: React.FC<{ phase: string }> = ({ phase }) => {
+  return (
+    <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
+      {/* Left Bird - Always on screen at top-left, pulls envelope flap during opening */}
+      <motion.div
+        initial={{ left: '-2%', top: '-85px', rotate: -6 }}
+        animate={
+          phase === 'closed' || phase === 'opened'
+            ? { left: '-2%', top: '-85px', y: [0, -12, 0], rotate: [-6, -2, -6] }
+            : phase === 'quarrel'
+            ? {
+                left: ['-2%', '24%', '12%', '-2%'], // Flies toward center flap, grabs it, pulls left!
+                top: ['-85px', '-15px', '-10px', '-65px'],
+                rotate: [-15, 12, -15, -20]
+              }
+            : { left: '-2%', top: '-85px', y: [0, -8, 0], rotate: -6 }
+        }
+        transition={
+          phase === 'quarrel'
+            ? { repeat: Infinity, duration: 1.6, ease: "easeInOut" }
+            : { repeat: Infinity, duration: 3.2, ease: "easeInOut" }
+        }
+        className="absolute filter drop-shadow-[0_14px_28px_rgba(0,0,0,0.9)]"
+      >
+        <div className="w-44 h-44 sm:w-60 sm:h-60 flex items-center justify-center">
+          <motion.img
+            src={animatedBirdGif}
+            alt="Pixabay Animated Flying Bird GIF"
+            referrerPolicy="no-referrer"
+            animate={
+              phase === 'quarrel'
+                ? { scaleY: [1, 0.85, 1.1, 0.85, 1], rotate: [0, -6, 6, 0] }
+                : { scaleY: [1, 0.9, 1] }
+            }
+            transition={{ repeat: Infinity, duration: phase === 'quarrel' ? 0.3 : 1.4 }}
+            className="w-full h-full object-contain filter drop-shadow-[0_8px_20px_rgba(255,255,255,0.9)]"
+          />
+        </div>
+      </motion.div>
+
+      {/* Right Bird - Always on screen at top-right, pulls envelope flap during opening */}
+      <motion.div
+        initial={{ right: '-2%', top: '-85px', rotate: 6 }}
+        animate={
+          phase === 'closed' || phase === 'opened'
+            ? { right: '-2%', top: '-85px', y: [0, -12, 0], rotate: [6, 2, 6] }
+            : phase === 'quarrel'
+            ? {
+                right: ['-2%', '24%', '12%', '-2%'], // Flies toward center flap, grabs it, pulls right!
+                top: ['-85px', '-15px', '-10px', '-65px'],
+                rotate: [15, -12, 15, 20]
+              }
+            : { right: '-2%', top: '-85px', y: [0, -8, 0], rotate: 6 }
+        }
+        transition={
+          phase === 'quarrel'
+            ? { repeat: Infinity, duration: 1.6, ease: "easeInOut", delay: 0.1 }
+            : { repeat: Infinity, duration: 3.2, ease: "easeInOut", delay: 0.3 }
+        }
+        className="absolute filter drop-shadow-[0_14px_28px_rgba(0,0,0,0.9)]"
+      >
+        <div className="w-44 h-44 sm:w-60 sm:h-60 flex items-center justify-center">
+          <motion.img
+            src={animatedBirdGif}
+            alt="Pixabay Animated Flying Bird GIF"
+            referrerPolicy="no-referrer"
+            animate={
+              phase === 'quarrel'
+                ? { scaleY: [1, 0.85, 1.1, 0.85, 1], rotate: [0, 6, -6, 0] }
+                : { scaleY: [1, 0.9, 1] }
+            }
+            transition={{ repeat: Infinity, duration: phase === 'quarrel' ? 0.3 : 1.4 }}
+            className="w-full h-full object-contain -scale-x-100 filter drop-shadow-[0_8px_20px_rgba(255,255,255,0.9)]"
+          />
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onReset, onPostToWall }) => {
   const [isOpened, setIsOpened] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
-  const [openingPhase, setOpeningPhase] = useState<'closed' | 'flap' | 'slide' | 'reveal'>('closed');
+  const [openingPhase, setOpeningPhase] = useState<'closed' | 'quarrel' | 'ripping' | 'burst'>('closed');
+  const [countdown, setCountdown] = useState(20);
   const [replyMessage, setReplyMessage] = useState('');
   const [replySender, setReplySender] = useState('');
   const [replied, setReplied] = useState(false);
@@ -51,37 +138,75 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
 
   const triggerFlowerBlessing = () => {
     playDhaakBeat();
+    // Immediate big festive flower confetti explosion
     confetti({
-      particleCount: 85,
-      spread: 75,
-      origin: { y: 0.55 },
-      colors: ['#f59e0b', '#dc2626', '#fbbf24', '#f43f5e', '#ffffff', '#e11d48']
+      particleCount: 140,
+      spread: 120,
+      startVelocity: 50,
+      origin: { y: 0.5 },
+      colors: ['#f59e0b', '#dc2626', '#fbbf24', '#f43f5e', '#ffffff', '#e11d48', '#d97706']
     });
+    // Secondary burst for extra excitement
+    setTimeout(() => {
+      confetti({
+        particleCount: 85,
+        angle: 60,
+        spread: 70,
+        origin: { x: 0 },
+        colors: ['#fbbf24', '#dc2626', '#ffffff']
+      });
+      confetti({
+        particleCount: 85,
+        angle: 120,
+        spread: 70,
+        origin: { x: 1 },
+        colors: ['#fbbf24', '#dc2626', '#ffffff']
+      });
+    }, 280);
+  };
+
+  const executeRippingAndOpen = () => {
+    setOpeningPhase('ripping');
+    playDhaakBeat();
+    triggerFlowerBlessing();
+
+    setTimeout(() => {
+      setOpeningPhase('burst');
+    }, 800);
+
+    setTimeout(() => {
+      setIsOpened(true);
+      setIsOpening(false);
+      setOpeningPhase('closed');
+    }, 1800);
   };
 
   const handleOpenCard = () => {
     if (isOpening || isOpened) return;
     setIsOpening(true);
-    setOpeningPhase('flap');
+    setOpeningPhase('quarrel');
+    setCountdown(10);
     playShankhoSound();
 
-    // Stage 1: Envelope top flap slowly unfolds (1.4s)
-    setTimeout(() => {
-      setOpeningPhase('slide');
-      triggerFlowerBlessing();
-    }, 1400);
+    let currentSec = 10;
+    const intervalId = setInterval(() => {
+      currentSec -= 1;
+      setCountdown(currentSec);
 
-    // Stage 2: Letter card slowly slides out of envelope (1.8s)
-    setTimeout(() => {
-      setOpeningPhase('reveal');
-    }, 3200);
+      if (currentSec % 3 === 0 && currentSec > 0) {
+        playDhaakBeat();
+      }
 
-    // Stage 3: Smooth transition into revealed card view
-    setTimeout(() => {
-      setIsOpened(true);
-      setIsOpening(false);
-      setOpeningPhase('closed');
-    }, 4000);
+      if (currentSec <= 0) {
+        clearInterval(intervalId);
+        executeRippingAndOpen();
+      }
+    }, 1000);
+  };
+
+  const handleSkipCountdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    executeRippingAndOpen();
   };
 
   const handleSendReply = (e: React.FormEvent) => {
@@ -99,39 +224,6 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
       <div className="absolute top-10 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Gentle Opening Aura / Divine Blessing Indicator */}
-      <AnimatePresence>
-        {isOpening && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none bg-gradient-to-t from-red-950/80 via-amber-950/60 to-stone-950/90 backdrop-blur-sm"
-          >
-            <div className="text-center space-y-3 p-6 max-w-md mx-auto bg-stone-950/80 border border-amber-400/40 rounded-3xl shadow-2xl">
-              <div className="text-5xl animate-pulse">🪷✨</div>
-              <h3 className="text-xl sm:text-2xl font-extrabold font-serif text-amber-200">
-                {openingPhase === 'flap' && 'পবিত্র খামের সীল খোলা হচ্ছে...'}
-                {openingPhase === 'slide' && 'ধীরে ধীরে বেরিয়ে আসছে আপনার চিঠি...'}
-                {openingPhase === 'reveal' && 'শারদীয় আশীর্বাদ প্রকাশ পাচ্ছে...'}
-              </h3>
-              <p className="text-xs text-amber-300/80 font-serif">শাঁখের ধ্বনি ও পুষ্পাঞ্জলি আশীর্বাদের সাথে শুভ আগমনী...</p>
-              
-              {/* Slow progress line */}
-              <div className="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-amber-500/30">
-                <motion.div
-                  initial={{ width: '0%' }}
-                  animate={{ width: openingPhase === 'flap' ? '33%' : openingPhase === 'slide' ? '70%' : '100%' }}
-                  transition={{ duration: 1.3, ease: "easeInOut" }}
-                  className="h-full bg-gradient-to-r from-amber-500 to-red-500 shadow-sm"
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="max-w-xl w-full mx-auto relative z-10 space-y-6">
         {/* Top bar with back to home option */}
         <div className="flex items-center justify-between px-1">
@@ -148,72 +240,166 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
         </div>
 
         {!isOpened ? (
-          /* Envelope View with Slow 3D Unfolding & Card Slide Animation */
+          /* Fixed Envelope View with Stationary Container & Pecking/Nibbling Birds Animation */
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="bg-stone-950/30 hover:bg-stone-950/40 backdrop-blur-md border-2 border-amber-400/50 rounded-3xl p-6 sm:p-10 shadow-2xl text-center space-y-6 relative overflow-hidden ring-4 ring-amber-500/20 group cursor-pointer"
+            className="bg-gradient-to-br from-red-900/60 via-amber-900/50 to-red-950/70 backdrop-blur-md border-2 border-amber-300/80 rounded-3xl p-5 sm:p-9 shadow-2xl text-center space-y-5 relative overflow-visible ring-4 ring-amber-400/30 group cursor-pointer"
             style={{ perspective: '1200px' }}
             onClick={handleOpenCard}
           >
-            <div className="absolute top-3 left-3 text-amber-400 text-sm">🪷</div>
-            <div className="absolute top-3 right-3 text-amber-400 text-sm">🪷</div>
+            <div className="absolute top-3 left-3 text-amber-300 text-base">🪷</div>
+            <div className="absolute top-3 right-3 text-amber-300 text-base">🪷</div>
 
-            {/* Simulated Envelope Outer Container */}
-            <div className="relative w-full max-w-md mx-auto bg-gradient-to-br from-red-950/60 via-stone-900/80 to-amber-950/60 border border-amber-400/40 rounded-2xl p-6 shadow-2xl overflow-hidden">
+            {/* Envelope Container with Splitting Halves on Tear */}
+            <div className="relative w-full max-w-md mx-auto min-h-[220px] flex items-center justify-center overflow-visible">
               
-              {/* Top Envelope Flap (3D Flip Animation) */}
+              {/* Left Envelope Half (Rips & Swings Left with Jagged Torn Paper Edges & Fibers) */}
               <motion.div
-                initial={{ rotateX: 0 }}
-                animate={{ rotateX: isOpening ? -180 : 0 }}
-                transition={{ duration: 1.4, ease: [0.25, 1, 0.5, 1] }}
-                style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-                className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-amber-600/40 via-red-900/60 to-transparent border-b border-amber-400/50 rounded-t-2xl z-20 pointer-events-none flex items-center justify-center"
+                animate={
+                  openingPhase === 'ripping' || openingPhase === 'burst'
+                    ? { x: -240, rotate: -35, opacity: 0, scale: 0.85 }
+                    : { x: 0, rotate: 0, opacity: 1, scale: 1 }
+                }
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-br from-red-700 via-red-800 to-amber-800 border-2 border-r-0 border-amber-300 rounded-l-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-end"
               >
-                {!isOpening && (
-                  <div className="w-12 h-12 rounded-full bg-amber-500/30 border-2 border-amber-300 flex items-center justify-center shadow-lg shadow-red-950/80">
-                    <span className="text-xl">🔴</span>
-                  </div>
-                )}
+                {/* White inner paper tear fibers texture */}
+                <div className="absolute right-0 top-0 bottom-0 w-2 bg-amber-100 shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                <svg viewBox="0 0 24 200" preserveAspectRatio="none" className="h-full w-6 text-amber-100 fill-amber-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.8)] z-10">
+                  <polygon points="0,0 24,12 8,25 24,40 6,55 24,70 8,85 24,100 5,115 24,130 8,145 24,160 5,175 24,200 0,200" />
+                </svg>
               </motion.div>
 
-              {/* Letter Card sliding out slowly */}
+              {/* Right Envelope Half (Rips & Swings Right with Jagged Torn Paper Edges & Fibers) */}
               <motion.div
-                animate={{
-                  y: openingPhase === 'slide' || openingPhase === 'reveal' ? -90 : 0,
-                  scale: openingPhase === 'slide' || openingPhase === 'reveal' ? 1.03 : 0.95,
-                }}
-                transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
-                className="bg-gradient-to-br from-amber-950/80 via-red-950/70 to-stone-900/90 border border-amber-400/60 rounded-xl p-5 shadow-xl relative z-10 space-y-3"
+                animate={
+                  openingPhase === 'ripping' || openingPhase === 'burst'
+                    ? { x: 240, rotate: 35, opacity: 0, scale: 0.85 }
+                    : { x: 0, rotate: 0, opacity: 1, scale: 1 }
+                }
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-bl from-red-700 via-red-800 to-amber-800 border-2 border-l-0 border-amber-300 rounded-r-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-start"
               >
-                <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center shadow-md">
-                  <Mail className="w-8 h-8 text-amber-300 animate-bounce" />
+                {/* White inner paper tear fibers texture */}
+                <div className="absolute left-0 top-0 bottom-0 w-2 bg-amber-100 shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                <svg viewBox="0 0 24 200" preserveAspectRatio="none" className="h-full w-6 text-amber-100 fill-amber-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.8)] z-10">
+                  <polygon points="24,0 0,12 18,25 0,40 18,55 0,70 18,85 0,100 19,115 0,130 18,145 0,160 19,175 0,200 24,200" />
+                </svg>
+              </motion.div>
+
+              {/* Ethereal Graceful Doves Component */}
+              <LovelyBirdsScene phase={openingPhase} />
+
+              {/* Flying Torn Paper Shreds & Scraps Effect */}
+              {openingPhase === 'ripping' && (
+                <div className="absolute inset-0 pointer-events-none z-35 flex items-center justify-center">
+                  {/* Paper Shred 1 */}
+                  <motion.div
+                    initial={{ x: 0, y: 0, scale: 0.5, rotate: 0, opacity: 1 }}
+                    animate={{ x: -140, y: -90, scale: 1.4, rotate: -280, opacity: 0 }}
+                    transition={{ duration: 0.7 }}
+                    className="absolute bg-amber-100 text-red-900 border border-amber-400 font-serif text-xs px-2 py-1 rounded shadow-lg"
+                  >
+                    📜 কাগজ...
+                  </motion.div>
+
+                  {/* Paper Shred 2 */}
+                  <motion.div
+                    initial={{ x: 0, y: 0, scale: 0.5, rotate: 0, opacity: 1 }}
+                    animate={{ x: 140, y: -80, scale: 1.4, rotate: 280, opacity: 0 }}
+                    transition={{ duration: 0.7 }}
+                    className="absolute bg-red-800 text-amber-100 border border-amber-300 font-serif text-xs px-2 py-1 rounded shadow-lg"
+                  >
+                    📄 ছিঁড়ে গেল!
+                  </motion.div>
+
+                  {/* Paper Shred 3 & 4 */}
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 1 }}
+                    animate={{ scale: 4, opacity: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="absolute text-5xl pointer-events-none"
+                  >
+                    📜📄🪶✨
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Golden Seal in Middle */}
+              <motion.div
+                animate={
+                  openingPhase === 'ripping' || openingPhase === 'burst'
+                    ? { scale: 2.5, opacity: 0 }
+                    : openingPhase === 'quarrel'
+                    ? { scale: [1, 1.25, 1], rotate: [0, 12, -12, 0] }
+                    : { scale: 1 }
+                }
+                transition={{ duration: 0.3 }}
+                className="absolute z-30 w-14 h-14 rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-500 border-2 border-white flex items-center justify-center shadow-2xl shadow-red-950 ring-2 ring-red-600 pointer-events-none"
+              >
+                <span className="text-2xl">🔴</span>
+              </motion.div>
+
+              {/* Inner Letter Card (Bursts Out of Rip Seam) */}
+              <motion.div
+                animate={
+                  openingPhase === 'burst'
+                    ? { scale: 1.05, y: 0, opacity: 1 }
+                    : openingPhase === 'ripping'
+                    ? { scale: 0.98, y: 0, opacity: 1 }
+                    : { scale: 0.92, y: 0 }
+                }
+                transition={{ duration: 0.5, ease: "backOut" }}
+                className="w-full bg-gradient-to-br from-amber-100 via-amber-50 to-orange-100 border-2 border-amber-400 rounded-xl p-5 shadow-2xl relative z-10 space-y-3 text-stone-900"
+              >
+                <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center shadow-md">
+                  <Mail className="w-8 h-8 text-red-700 animate-bounce" />
                 </div>
 
                 <div className="space-y-1">
-                  <span className="inline-block px-3 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/40">
-                    🌸 পবিত্র শারদীয়া খাম
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-amber-200">
-                    {cardData.from} এর পক্ষ থেকে বিশেষ চিঠি!
+                  <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-red-900">
+                    {cardData.from} এর বিশেষ বার্তা
                   </h2>
-                  <p className="text-xs text-amber-300/80">প্রাপক: <span className="font-bold text-white">{cardData.to}</span></p>
+                  <p className="text-xs sm:text-sm font-serif font-bold text-amber-950">
+                    প্রাপক: <span className="text-red-900 font-extrabold">{cardData.to}</span>
+                  </p>
                 </div>
               </motion.div>
             </div>
 
-            <div className="bg-stone-950/50 backdrop-blur-sm p-3.5 rounded-2xl border border-amber-500/30 text-xs text-amber-200/90 italic font-serif">
-              {isOpening ? "ধীরে ধীরে চিঠিটি প্রকাশ পাচ্ছে..." : "চিঠিটি আবেশে খুলতে নিচের বাটনে স্পর্শ করুন..."}
-            </div>
-
-            <button
-              onClick={handleOpenCard}
-              disabled={isOpening}
-              className="w-full bg-gradient-to-r from-amber-500 via-orange-600 to-red-600 hover:from-amber-400 hover:to-red-500 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl shadow-red-950/60 transition-all transform hover:scale-105 active:scale-95 border border-amber-300 disabled:opacity-75"
-            >
-              <Sparkles className="w-5 h-5" /> {isOpening ? "ধীরে ধীরে খোলা হচ্ছে..." : "চিঠি খুলুন (ধীরে ধীরে আনফোল্ডিং)"}
-            </button>
+            {isOpening ? (
+              <div className="flex flex-col items-center gap-2.5 w-full">
+                <div className="w-full bg-gradient-to-r from-amber-300 via-orange-400 to-amber-500 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-sm sm:text-base flex flex-col items-center justify-center gap-1.5 shadow-xl border-2 border-amber-200">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-red-950 animate-spin" />
+                    চিঠি খোলা হচ্ছে... ({countdown}s)
+                  </div>
+                  <div className="w-full bg-red-950/20 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-red-900 h-full transition-all duration-1000 ease-linear rounded-full"
+                      style={{ width: `${((10 - countdown) / 10) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSkipCountdown}
+                  className="text-xs text-amber-300 hover:text-amber-100 underline decoration-amber-400/60 transition-colors"
+                >
+                  ⚡ এখনই দেখুন (স্কিপ করুন)
+                </button>
+              </div>
+            ) : (
+              <button
+                id="open-card-bird-btn"
+                onClick={handleOpenCard}
+                className="w-full bg-gradient-to-r from-amber-300 via-orange-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-base flex items-center justify-center gap-2 shadow-xl shadow-red-950/60 transition-all transform hover:scale-105 active:scale-95 border-2 border-amber-200"
+              >
+                <Sparkles className="w-5 h-5 text-red-950" /> চিঠি খুলুন ✉️
+              </button>
+            )}
           </motion.div>
         ) : (
           /* Opened Greeting Card View */
@@ -234,6 +420,9 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               className="relative group"
             >
+              {/* Animated Birds Always Present on Top Corners of Opened Card */}
+              <LovelyBirdsScene phase="opened" />
+
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-amber-500/30 via-yellow-400/50 to-red-500/30 blur-xl opacity-85 group-hover:opacity-100 transition duration-1000 animate-pulse pointer-events-none" />
 
               <div className={`rounded-3xl p-6 sm:p-9 shadow-2xl border-2 border-amber-400/70 ${themeObj.cardBg} backdrop-blur-xl relative overflow-hidden ring-2 ring-amber-300/30`}>

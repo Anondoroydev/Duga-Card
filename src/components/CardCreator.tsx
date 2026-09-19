@@ -251,13 +251,13 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 shrink-0">
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-amber-300/90 mb-1">
-                  প্রাপকের নাম (To):
+                  যার উদ্দেশে চিঠি (কার কাছে পাঠাচ্ছেন):
                 </label>
                 <input
                   type="text"
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
-                  placeholder="যেমন: প্রিয় বন্ধু রাহুল"
+                  placeholder="যেমন: প্রিয় রাহুল"
                   className="w-full bg-stone-950/40 backdrop-blur-sm border border-amber-400/30 rounded-xl px-3 py-1.5 sm:py-2 text-amber-100 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all text-xs shadow-inner"
                   required
                 />
@@ -561,9 +561,9 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
 
                   {/* To and From */}
                   <div className="mb-1.5">
-                    <p className="text-[9px] text-amber-300/80 uppercase tracking-widest font-semibold">প্রাপক:</p>
+                    <p className="text-[9px] text-amber-300/90 font-serif font-bold tracking-wide">💖 যার জন্য এই শুভেচ্ছা:</p>
                     <h4 className="text-sm sm:text-base font-bold text-white font-serif tracking-tight truncate">
-                      {recipient || 'প্রিয় বন্ধু (Recipient Name)'}
+                      {recipient || 'প্রিয় বন্ধু'}
                     </h4>
                   </div>
 
