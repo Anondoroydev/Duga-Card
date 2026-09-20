@@ -173,17 +173,23 @@ export function safeUriDecode(val: string | null | undefined): string {
 export async function parseCardFromLocation(): Promise<GreetingCardData | null> {
   if (typeof window === 'undefined') return null;
 
-  console.log('[CardShare] Parsing location:', window.location.href);
-
-  // 1. Gather all URLSearchParams from both search (?...) and hash (#...)
   const fullUrl = window.location.href;
-  const searchParams = new URLSearchParams(window.location.search);
+  const search = window.location.search;
+  const hash = window.location.hash;
   
-  // Also parse manually to catch cases where search params are misformed or preceded by multiple ?
+  console.log('[CardShare] Full URL:', fullUrl);
+  console.log('[CardShare] Search:', search);
+  console.log('[CardShare] Hash:', hash);
+
+  const searchParams = new URLSearchParams(search);
+  
+  // Also parse manually to catch cases where search params are misformed
   const getManually = (key: string): string | null => {
     const regex = new RegExp(`[?&]${key}=([^&#]*)`, 'i');
     const match = fullUrl.match(regex);
-    return match ? safeUriDecode(match[1]) : null;
+    const result = match ? safeUriDecode(match[1]) : null;
+    console.log(`[CardShare] getManually(${key}) ->`, result);
+    return result;
   };
   
   let hashParams = new URLSearchParams();
@@ -224,9 +230,35 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
       return directDecode;
     }
 
-    // Try fetching from backend API if available
+    // Try fetching from client-side Firestore (works on Vercel/Static hosting)
     try {
-      console.log('[CardShare] Fetching card from API:', cParam);
+      console.log('[CardShare] Fetching card from client-side Firestore:', cParam);
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('../lib/firebase');
+      
+      const docRef = doc(db, 'cards', cParam);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        console.log('[CardShare] Firestore Client Fetch Success');
+        return {
+          from: data.from || '',
+          to: data.to || '',
+          message: data.message || '',
+          theme: (data.theme || 'royal-maroon') as any,
+          imageUrl: data.imageUrl || undefined,
+        };
+      } else {
+        console.warn('[CardShare] Card not found in Firestore Client');
+      }
+    } catch (err) {
+      console.error('[CardShare] Firestore Client Fetch Error:', err);
+    }
+
+    // Fallback: Try fetching from backend API if available
+    try {
+      console.log('[CardShare] Falling back to API fetch:', cParam);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 7500); // Increased timeout for cold starts
       const res = await fetch(`/api/cards/${encodeURIComponent(cParam)}`, {

@@ -203,9 +203,38 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
     const directCardUrl = buildIndestructibleShareUrl(cardData);
     setShareLink(directCardUrl);
 
-    // Call API to create a persistent short link via Firestore
-    setIsCreatingShortLink(true);
+    // 1. Try client-side Firestore first (most reliable for Vercel/Static)
     try {
+      console.log('[CardCreator] Saving to Firestore Client...');
+      const { setDoc, doc } = await import('firebase/firestore');
+      const { db } = await import('../lib/firebase');
+      const { nanoid } = await import('nanoid');
+      
+      const cardId = nanoid(8); // Use slightly longer ID for better collision resistance
+      const cardRef = doc(db, 'cards', cardId);
+      
+      await setDoc(cardRef, {
+        from: cardData.from,
+        to: cardData.to,
+        message: cardData.message,
+        theme: cardData.theme,
+        imageUrl: cardData.imageUrl,
+        createdAt: new Date().toISOString()
+      });
+
+      console.log('[CardCreator] Firestore Client Save Success:', cardId);
+      const baseUrl = window.location.origin + window.location.pathname;
+      const finalShortUrl = baseUrl.endsWith('/') ? `${baseUrl}?c=${cardId}` : `${baseUrl}/?c=${cardId}`;
+      setShareLink(finalShortUrl);
+      setIsCreatingShortLink(false);
+      return; // Success!
+    } catch (err) {
+      console.error('[CardCreator] Firestore Client Save Error:', err);
+    }
+
+    // 2. Fallback to API if client-side fails
+    try {
+      console.log('[CardCreator] Falling back to API for short link...');
       const res = await fetch('/api/cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,14 +243,19 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.id) {
-          // Build the short URL using the reliable local origin
+          // Use current origin + pathname + id to ensure it works in current env
           const baseUrl = window.location.origin + window.location.pathname;
-          const shortUrl = `${baseUrl}?c=${data.id}`;
-          setShareLink(shortUrl);
+          const finalShortUrl = baseUrl.endsWith('/') ? `${baseUrl}?c=${data.id}` : `${baseUrl}/?c=${data.id}`;
+          console.log('[CardCreator] Final short URL:', finalShortUrl);
+          setShareLink(finalShortUrl);
+        } else if (data.shortUrl) {
+          setShareLink(data.shortUrl);
         }
+      } else {
+        console.warn('[CardCreator] API failed, keeping long URL');
       }
-    } catch (_err) {
-      // Ignore background errors, we have the directCardUrl fallback
+    } catch (err) {
+      console.error('[CardCreator] API error:', err);
     } finally {
       setIsCreatingShortLink(false);
       // Automatically switch to 1-page preview on mobile so user sees the complete card

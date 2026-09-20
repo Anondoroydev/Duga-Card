@@ -19,6 +19,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('create');
   const [sharedCard, setSharedCard] = useState<GreetingCardData | null>(null);
   const [isLoadingSharedCard, setIsLoadingSharedCard] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -34,14 +35,18 @@ export default function App() {
     let isMounted = true;
 
     async function loadCard() {
-      // Check both search and hash for any evidence of a shared card
-      const loc = (window.location.search + window.location.hash + window.location.href).toLowerCase();
-      const hasParams = loc.includes('card=') || 
-                        loc.includes('c=') || 
-                        loc.includes('from=') ||
-                        loc.includes('to=');
+      const search = window.location.search;
+      const hash = window.location.hash;
+      const params = new URLSearchParams(search);
       
-      if (!hasParams) {
+      console.log('[App] Loading card, search:', search, 'hash:', hash);
+
+      const hasC = params.has('c') || params.has('C') || search.includes('c=') || search.includes('C=') || hash.includes('c=');
+      const hasCard = params.has('card') || search.includes('card=');
+      const hasLegacy = params.has('from') && params.has('to');
+
+      if (!hasC && !hasCard && !hasLegacy) {
+        console.log('[App] No card parameters found in URL');
         if (isMounted) {
           setIsLoadingSharedCard(false);
         }
@@ -49,14 +54,23 @@ export default function App() {
       }
 
       try {
-        // Give it a small tick to ensure URL is stable (some mobile redirects)
-        await new Promise(r => setTimeout(r, 100));
+        console.log('[App] Card parameters detected, parsing...');
+        // Small delay to ensure browser has fully parsed location
+        await new Promise(r => setTimeout(r, 200));
         const card = await parseCardFromLocation();
-        if (isMounted && card) {
-          setSharedCard(card);
+        
+        if (isMounted) {
+          if (card) {
+            console.log('[App] Card successfully parsed:', card.from, 'to', card.to);
+            setSharedCard(card);
+          } else {
+            console.warn('[App] Card parameters found but parsing returned null');
+            setLoadError('দুঃখিত, এই লিঙ্কে কোনো কার্ড খুঁজে পাওয়া যায়নি। সম্ভবত লিঙ্কটি ভুল বা কার্ডটি মুছে ফেলা হয়েছে।');
+          }
         }
       } catch (err) {
-        console.error('Failed to parse card from URL:', err);
+        console.error('[App] Failed to load shared card:', err);
+        setLoadError('কার্ডটি লোড করতে সমস্যা হয়েছে। দয়া করে আপনার ইন্টারনেট কানেকশন চেক করুন।');
       } finally {
         if (isMounted) {
           setIsLoadingSharedCard(false);
@@ -153,6 +167,17 @@ export default function App() {
             <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
               <div className="text-4xl animate-bounce">🪔</div>
               <p className="text-amber-300 font-serif text-base animate-pulse">শারদীয় শুভেচ্ছা কার্ডটি খোলা হচ্ছে...</p>
+            </div>
+          ) : loadError ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4">
+              <div className="text-5xl">😟</div>
+              <p className="text-rose-400 font-serif text-lg max-w-md">{loadError}</p>
+              <button 
+                onClick={handleResetShare}
+                className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-2 rounded-full font-bold transition-all shadow-lg"
+              >
+                নিজে একটি কার্ড তৈরি করুন
+              </button>
             </div>
           ) : (
             <>

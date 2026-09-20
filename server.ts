@@ -166,6 +166,7 @@ app.post("/api/wishes", (req, res) => {
 
 // API: Create short card link (Persisted to Firestore)
 app.post("/api/cards", async (req, res) => {
+  console.log(`[API] POST /api/cards - Headers:`, JSON.stringify(req.headers));
   try {
     const { from, to, message, theme, imageUrl } = req.body;
     if (!from || !to || !message) {
@@ -212,7 +213,7 @@ app.post("/api/cards", async (req, res) => {
 // API: Get specific card details from Firestore
 app.get("/api/cards/:id", async (req, res) => {
   const { id } = req.params;
-  console.log(`[API] Fetching card with ID: ${id}`);
+  console.log(`[API] GET /api/cards/${id} - Headers:`, JSON.stringify(req.headers));
   try {
     const doc = await db.collection('cards').doc(id).get();
     
