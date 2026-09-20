@@ -85,7 +85,7 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
 
 /**
  * Generates an indestructible share URL based on the real browser origin.
- * Uses new URL() for maximum reliability across different hosting environments.
+ * Optimizes for length by removing redundant parameters.
  */
 export function buildIndestructibleShareUrl(card: GreetingCardData): string {
   if (typeof window === 'undefined') return '';
@@ -94,26 +94,16 @@ export function buildIndestructibleShareUrl(card: GreetingCardData): string {
     const url = new URL(window.location.origin + window.location.pathname);
     const encodedCard = encodeCardToParam(card);
     
-    // Primary parameter: full encoded card
+    // Primary parameter: full encoded card (contains everything)
     if (encodedCard) {
-      url.searchParams.set('card', encodedCard);
+      url.searchParams.set('c', encodedCard); // Use 'c' instead of 'card' for shorter URL
     }
     
-    // Resilient fallbacks: individual parameters
-    url.searchParams.set('from', card.from.trim());
-    url.searchParams.set('to', card.to.trim());
-    url.searchParams.set('msg', card.message.trim() || 'शुभ শারদীয় শুভেচ্ছা!');
-    url.searchParams.set('theme', card.theme || 'royal-maroon');
-    if (card.imageUrl) {
-      url.searchParams.set('img', card.imageUrl);
-    }
-
     return url.toString();
   } catch (err) {
     console.error('Failed to build share URL:', err);
-    // Absolute fallback
     const encoded = encodeCardToParam(card);
-    return `${window.location.origin}${window.location.pathname}?card=${encoded}`;
+    return `${window.location.origin}${window.location.pathname}?c=${encoded}`;
   }
 }
 
