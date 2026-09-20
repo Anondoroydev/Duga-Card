@@ -4,21 +4,21 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import firebaseConfig from './firebase-applet-config.json';
+
 const app = express();
 const PORT = 3000;
 
-// Path for persistent card storage
-const CARDS_FILE_PATH = path.join(process.cwd(), "data", "cards.json");
-
-// Ensure data folder exists
-try {
-  const dataDir = path.join(process.cwd(), "data");
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-} catch (_e) {
-  // Ignore
+// Initialize Firebase Admin
+if (!getApps().length) {
+  initializeApp({
+    projectId: firebaseConfig.projectId,
+  });
 }
+
+const db = getFirestore(firebaseConfig.firestoreDatabaseId || '(default)');
 
 app.use(express.json());
 
@@ -153,65 +153,7 @@ app.post("/api/wishes", (req, res) => {
   res.json({ success: true, wish: newWish });
 });
 
-// In-memory persistent store for shortened greeting cards with disk backup
-interface StoredCard {
-  id: string;
-  from: string;
-  to: string;
-  message: string;
-  theme: string;
-  imageUrl?: string;
-  createdAt: string;
-}
-
-const shortCards = new Map<string, StoredCard>();
-
-// Load previously saved cards from disk on startup
-function loadCardsFromDisk() {
-  try {
-    if (fs.existsSync(CARDS_FILE_PATH)) {
-      const content = fs.readFileSync(CARDS_FILE_PATH, "utf-8");
-      const list: StoredCard[] = JSON.parse(content);
-      if (Array.isArray(list)) {
-        for (const card of list) {
-          if (card && card.id) {
-            shortCards.set(card.id, card);
-          }
-        }
-      }
-    }
-  } catch (err) {
-    console.error("Failed to load cards from disk:", err);
-  }
-}
-
-function saveCardsToDisk() {
-  try {
-    const list = Array.from(shortCards.values());
-    fs.writeFileSync(CARDS_FILE_PATH, JSON.stringify(list, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Failed to save cards to disk:", err);
-  }
-}
-
-loadCardsFromDisk();
-
-// Seed a sample greeting card if empty
-if (!shortCards.has("durga26")) {
-  const seedCard: StoredCard = {
-    id: "durga26",
-    from: "অজয় সরকার",
-    to: "সকল ভক্তবৃন্দ",
-    message: "শুভ শারদীয়া ২০২৬! মা দুর্গার আশীর্বাদে আপনার জীবন অনাবিল আনন্দ ও সুখ-শান্তিতে ভরে উঠুক।",
-    theme: "royal-maroon",
-    imageUrl: "/slide1.jpg",
-    createdAt: new Date().toISOString(),
-  };
-  shortCards.set("durga26", seedCard);
-  saveCardsToDisk();
-}
-
-// API: Create short card link
+// API: Create short card link (Persisted to Firestore)
 app.post("/api/cards", async (req, res) => {
   try {
     const { from, to, message, theme, imageUrl } = req.body;
@@ -226,7 +168,7 @@ app.post("/api/cards", async (req, res) => {
       id += chars.charAt(Math.floor(Math.random() * chars.length));
     }
 
-    const card: StoredCard = {
+    const cardData = {
       id,
       from: from.trim(),
       to: to.trim(),
@@ -236,8 +178,8 @@ app.post("/api/cards", async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    shortCards.set(id, card);
-    saveCardsToDisk();
+    // Save to Firestore
+    await db.collection('cards').doc(id).set(cardData);
 
     // Determine correct public origin (respect reverse proxy headers)
     const host = req.get("x-forwarded-host") || req.get("host") || "localhost:3000";
@@ -249,58 +191,32 @@ app.post("/api/cards", async (req, res) => {
       success: true,
       id,
       shortUrl: directShortUrl,
-      card,
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to create short card" });
+  } catch (error: any) {
+    console.error("Failed to create card in Firestore:", error);
+    res.status(500).json({ error: "Failed to create short link" });
   }
 });
 
-// API: List all cards
-app.get("/api/cards", (req, res) => {
-  res.json({ success: true, cards: Array.from(shortCards.values()) });
-});
-
-// API: Get card by ID (supports short ID, disk lookup, or direct base64 encoded token)
-app.get("/api/cards/:id", (req, res) => {
-  const paramId = req.params.id;
-  let card = shortCards.get(paramId);
-
-  // If not in memory, re-read disk
-  if (!card && fs.existsSync(CARDS_FILE_PATH)) {
-    loadCardsFromDisk();
-    card = shortCards.get(paramId);
-  }
-
-  // If still not found, check if the ID itself is a base64url encoded card
-  if (!card && paramId.length > 20) {
-    try {
-      let clean = paramId.trim().replace(/-/g, '+').replace(/_/g, '/');
-      while (clean.length % 4 !== 0) clean += '=';
-      const jsonStr = Buffer.from(clean, 'base64').toString('utf-8');
-      const parsed = JSON.parse(jsonStr);
-      if (parsed && (parsed.f || parsed.from || parsed.m || parsed.message)) {
-        card = {
-          id: paramId,
-          from: parsed.f || parsed.from || '',
-          to: parsed.t || parsed.to || '',
-          message: parsed.m || parsed.message || '',
-          theme: parsed.th || parsed.theme || 'royal-maroon',
-          imageUrl: parsed.i || parsed.imageUrl || '',
-          createdAt: new Date().toISOString(),
-        };
-      }
-    } catch (_e) {
-      // Not a valid base64 token
+// API: Get specific card details from Firestore
+app.get("/api/cards/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await db.collection('cards').doc(id).get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Card not found" });
     }
-  }
 
-  if (!card) {
-    return res.status(404).json({ error: "Card not found" });
+    res.json({
+      success: true,
+      card: doc.data(),
+    });
+  } catch (error) {
+    console.error("Failed to fetch card from Firestore:", error);
+    res.status(500).json({ error: "Failed to fetch card details" });
   }
-  res.json({ success: true, card });
 });
-
 // Serve static audio assets with proper MIME types and range request support
 app.use('/audio', express.static(path.join(process.cwd(), 'public/audio')));
 app.use(express.static(path.join(process.cwd(), 'public')));

@@ -1,0 +1,25 @@
+{
+  "entities": {
+    "card": {
+      "title": "Greeting Card",
+      "description": "A digital Durga Puja greeting card",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "type": "string", "maxLength": 100 },
+        "to": { "type": "string", "maxLength": 100 },
+        "message": { "type": "string", "maxLength": 2000 },
+        "theme": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["from", "to", "message"]
+    }
+  },
+  "firestore": {
+    "/cards/{cardId}": {
+      "schema": "card",
+      "description": "Collection of shared greeting cards"
+    }
+  }
+}

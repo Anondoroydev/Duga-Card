@@ -199,21 +199,27 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
 
     onShareCard(cardData);
 
-    // Priority: The indestructible link is our source of truth for deployment resilience.
-    // We use this as the primary link because short links (Map-based) fail on serverless platforms like Vercel.
+    // Initial fallback: Indestructible link (client-side generated)
     const directCardUrl = buildIndestructibleShareUrl(cardData);
     setShareLink(directCardUrl);
 
-    // We can still send the card to the wall if needed, but we won't use the short link for sharing.
+    // Call API to create a persistent short link via Firestore
     setIsCreatingShortLink(true);
     try {
-      await fetch('/api/cards', {
+      const res = await fetch('/api/cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.shortUrl) {
+          // Replace share link with the nice short one from Firestore
+          setShareLink(data.shortUrl);
+        }
+      }
     } catch (_err) {
-      // Ignore background errors
+      // Ignore background errors, we have the directCardUrl fallback
     } finally {
       setIsCreatingShortLink(false);
       // Automatically switch to 1-page preview on mobile so user sees the complete card

@@ -69,7 +69,7 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
         from: data[0] || '',
         to: data[1] || '',
         message: data[2] || '',
-        theme: data[3] && typeof data[3] === 'string' ? data[3] : 'royal-maroon',
+        theme: (data[3] && typeof data[3] === 'string' ? data[3] : 'royal-maroon') as any,
         imageUrl: data[4] && typeof data[4] === 'string' ? data[4] : undefined
       };
     }
@@ -78,7 +78,7 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
       from: data.f || data.from || '',
       to: data.t || data.to || '',
       message: data.m || data.message || '',
-      theme: data.th || data.theme || 'royal-maroon',
+      theme: (data.th || data.theme || 'royal-maroon') as any,
       imageUrl: data.i || data.imageUrl || undefined,
     };
   } catch (err) {
@@ -109,7 +109,7 @@ function decodeBase64Fallback(param: string): GreetingCardData | null {
       from: data.f || data.from || '',
       to: data.t || data.to || '',
       message: data.m || data.message || '',
-      theme: data.th || data.theme || 'royal-maroon',
+      theme: (data.th || data.theme || 'royal-maroon') as any,
       imageUrl: data.i || data.imageUrl || undefined,
     };
   } catch (e) {
