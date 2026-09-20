@@ -199,34 +199,21 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
 
     onShareCard(cardData);
 
-    // Generate indestructible deploy-proof share URL (works 100% offline, on Vercel, Cloud Run, WhatsApp, etc.)
+    // Priority: The indestructible link is our source of truth for deployment resilience.
+    // We use this as the primary link because short links (Map-based) fail on serverless platforms like Vercel.
     const directCardUrl = buildIndestructibleShareUrl(cardData);
     setShareLink(directCardUrl);
 
-    // Also persist card to server backend in the background
+    // We can still send the card to the wall if needed, but we won't use the short link for sharing.
     setIsCreatingShortLink(true);
     try {
-      const res = await fetch('/api/cards', {
+      await fetch('/api/cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData),
       });
-      
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.shortUrl) {
-          // Priority: Use the short link if server successfully created it
-          setShareLink(data.shortUrl);
-        } else {
-          // Fallback: If for some reason short link failed, use the indestructible base64 link
-          setShareLink(directCardUrl);
-        }
-      } else {
-        setShareLink(directCardUrl);
-      }
     } catch (_err) {
-      // If server is down, the indestructible base64 link is our safety net
-      setShareLink(directCardUrl);
+      // Ignore background errors
     } finally {
       setIsCreatingShortLink(false);
       // Automatically switch to 1-page preview on mobile so user sees the complete card

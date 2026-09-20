@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquareHeart, Clock, Volume2, Music, Disc } from 'lucide-react';
+import durgaLogo from '../assets/images/durga_logo_1789832821020.jpg';
 import { ActiveTab } from '../types';
 import { 
   playDhaakSound, 
@@ -52,10 +53,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden shadow-md shadow-red-900/50 group-hover:scale-105 transition-transform border border-amber-300">
             <img 
-              src="/src/assets/images/durga_logo_1789832821020.jpg" 
+              src="/durga_logo.jpg" 
               alt="Durga Logo" 
               className="w-full h-full object-cover"
-              referrerPolicy="no-referrer" 
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                // Fallback to the bundled asset if the public one is missing
+                (e.target as HTMLImageElement).src = durgaLogo;
+              }}
             />
           </div>
           <div>

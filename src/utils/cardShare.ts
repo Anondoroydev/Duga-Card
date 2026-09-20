@@ -84,35 +84,37 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
 }
 
 /**
- * Generates an indestructible share URL based on the real browser origin
+ * Generates an indestructible share URL based on the real browser origin.
+ * Uses new URL() for maximum reliability across different hosting environments.
  */
 export function buildIndestructibleShareUrl(card: GreetingCardData): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+  if (typeof window === 'undefined') return '';
   
-  // Create base URL without trailing slash, but ensure origin is clean
-  const cleanOrigin = origin.replace(/\/+$/, '');
-  const cleanPath = pathname.replace(/\/+$/, '');
-  const base = `${cleanOrigin}${cleanPath || ''}`;
-  
-  const encodedCard = encodeCardToParam(card);
-  const params = new URLSearchParams();
-  
-  if (encodedCard) {
-    params.set('card', encodedCard);
-  }
-  
-  // Also append standard human-readable parameters as 100% resilient fallback
-  params.set('from', card.from.trim());
-  params.set('to', card.to.trim());
-  params.set('msg', card.message.trim());
-  params.set('theme', card.theme || 'royal-maroon');
-  if (card.imageUrl) {
-    params.set('img', card.imageUrl);
-  }
+  try {
+    const url = new URL(window.location.origin + window.location.pathname);
+    const encodedCard = encodeCardToParam(card);
+    
+    // Primary parameter: full encoded card
+    if (encodedCard) {
+      url.searchParams.set('card', encodedCard);
+    }
+    
+    // Resilient fallbacks: individual parameters
+    url.searchParams.set('from', card.from.trim());
+    url.searchParams.set('to', card.to.trim());
+    url.searchParams.set('msg', card.message.trim() || 'शुभ শারদীয় শুভেচ্ছা!');
+    url.searchParams.set('theme', card.theme || 'royal-maroon');
+    if (card.imageUrl) {
+      url.searchParams.set('img', card.imageUrl);
+    }
 
-  // Ensure precisely one slash between base and query params
-  return `${base}/?${params.toString()}`;
+    return url.toString();
+  } catch (err) {
+    console.error('Failed to build share URL:', err);
+    // Absolute fallback
+    const encoded = encodeCardToParam(card);
+    return `${window.location.origin}${window.location.pathname}?card=${encoded}`;
+  }
 }
 
 /**
@@ -121,9 +123,10 @@ export function buildIndestructibleShareUrl(card: GreetingCardData): string {
 export function safeUriDecode(val: string | null | undefined): string {
   if (!val) return '';
   try {
-    return decodeURIComponent(val);
+    const decoded = decodeURIComponent(val.replace(/\+/g, ' '));
+    return decoded.replace(/^["']|["']$/g, "").trim();
   } catch (_e) {
-    return val;
+    return val || '';
   }
 }
 
@@ -135,7 +138,15 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
   if (typeof window === 'undefined') return null;
 
   // 1. Gather all URLSearchParams from both search (?...) and hash (#...)
+  const fullUrl = window.location.href;
   const searchParams = new URLSearchParams(window.location.search);
+  
+  // Also parse manually to catch cases where search params are misformed or preceded by multiple ?
+  const getManually = (key: string): string | null => {
+    const regex = new RegExp(`[?&]${key}=([^&#]*)`, 'i');
+    const match = fullUrl.match(regex);
+    return match ? safeUriDecode(match[1]) : null;
+  };
   
   let hashParams = new URLSearchParams();
   if (window.location.hash) {
@@ -148,21 +159,19 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
     }
   }
 
-  // Helper to get from either search or hash
+  // Helper to get from either search, manual regex, or hash
   const getParam = (key: string): string | null => {
-    const val = searchParams.get(key) || hashParams.get(key);
+    const val = searchParams.get(key) || getManually(key) || hashParams.get(key);
     if (!val) return null;
     // Strip quotes if any (some redirectors might add them)
     return val.replace(/^["']|["']$/g, "").trim();
   };
 
-  // 2. Try the self-contained 'card' parameter first (0ms, 100% offline & deploy-proof)
+  // 2. Try the self-contained 'card' parameter first
   const cardParam = getParam('card');
   if (cardParam) {
     const decoded = decodeCardFromParam(cardParam);
-    if (decoded) {
-      return decoded;
-    }
+    if (decoded) return decoded;
   }
 
   // 3. Try the 'c' parameter (could be short code or base64 token)
@@ -170,9 +179,7 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
   if (cParam) {
     // Check if 'c' is directly a base64 encoded card
     const directDecode = decodeCardFromParam(cParam);
-    if (directDecode) {
-      return directDecode;
-    }
+    if (directDecode) return directDecode;
 
     // Try fetching from backend API if available
     try {
@@ -200,20 +207,17 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
     }
   }
 
-  // 4. Try standard query parameters (?from=...&to=...&msg=...)
+  // 4. Try standard query parameters as third-level fallback
   const from = getParam('from');
   const to = getParam('to');
-  const msg = getParam('msg') || getParam('message');
-  const theme = getParam('theme');
-  const img = getParam('img') || getParam('imageUrl');
-
-  if (from && to && msg) {
+  
+  if (from && to) {
     return {
       from: safeUriDecode(from),
       to: safeUriDecode(to),
-      message: safeUriDecode(msg),
-      theme: (theme as any) || 'royal-maroon',
-      imageUrl: img ? safeUriDecode(img) : undefined,
+      message: safeUriDecode(getParam('msg') || getParam('message')) || 'शुभ শারদীয় শুভেচ্ছা!',
+      theme: (getParam('theme') || getParam('t') || 'royal-maroon') as any,
+      imageUrl: safeUriDecode(getParam('img') || getParam('imageUrl')) || undefined,
     };
   }
 

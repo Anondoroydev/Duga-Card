@@ -34,7 +34,23 @@ export default function App() {
     let isMounted = true;
 
     async function loadCard() {
+      // Check both search and hash for any evidence of a shared card
+      const loc = (window.location.search + window.location.hash + window.location.href).toLowerCase();
+      const hasParams = loc.includes('card=') || 
+                        loc.includes('c=') || 
+                        loc.includes('from=') ||
+                        loc.includes('to=');
+      
+      if (!hasParams) {
+        if (isMounted) {
+          setIsLoadingSharedCard(false);
+        }
+        return;
+      }
+
       try {
+        // Give it a small tick to ensure URL is stable (some mobile redirects)
+        await new Promise(r => setTimeout(r, 100));
         const card = await parseCardFromLocation();
         if (isMounted && card) {
           setSharedCard(card);
@@ -133,15 +149,12 @@ export default function App() {
               onReset={handleResetShare}
               onPostToWall={handlePostToWallViaShared}
             />
-          ) : (isLoadingSharedCard && typeof window !== 'undefined' && 
-                (window.location.search.includes('card=') || window.location.search.includes('c=') || window.location.search.includes('from=') ||
-                 window.location.hash.includes('card=') || window.location.hash.includes('c=') || window.location.hash.includes('from='))
-              ) ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
-                  <div className="text-4xl animate-bounce">🪔</div>
-                  <p className="text-amber-300 font-serif text-base animate-pulse">শারদীয় শুভেচ্ছা কার্ডটি খোলা হচ্ছে...</p>
-                </div>
-              ) : (
+          ) : isLoadingSharedCard ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
+              <div className="text-4xl animate-bounce">🪔</div>
+              <p className="text-amber-300 font-serif text-base animate-pulse">শারদীয় শুভেচ্ছা কার্ডটি খোলা হচ্ছে...</p>
+            </div>
+          ) : (
             <>
               {activeTab === 'create' && <CardCreator onShareCard={handleShareCard} />}
               {activeTab === 'wall' && <WishesWall />}
