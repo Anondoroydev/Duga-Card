@@ -120,7 +120,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
       <div className="absolute top-10 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-xl w-full mx-auto relative z-10 space-y-6 pt-16 sm:pt-20">
+      <div className="max-w-xl w-full mx-auto relative z-10 space-y-6 pt-10">
         {/* Top bar with back to home option */}
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-amber-300/80 font-serif flex items-center gap-1.5">

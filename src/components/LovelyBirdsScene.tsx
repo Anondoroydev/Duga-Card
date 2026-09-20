@@ -14,17 +14,17 @@ export const LovelyBirdsScene: React.FC<LovelyBirdsSceneProps> = ({ phase }) => 
     <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
       {/* Left Bird - Optimized for Mobile & Desktop Spread */}
       <motion.div
-        initial={{ left: isMobile ? '0%' : '-10%', top: '-65px', rotate: -4 }}
+        initial={{ left: isMobile ? '0%' : '-10%', top: '-45px', rotate: -4 }}
         animate={
           phase === 'closed' || phase === 'opened'
-            ? { left: isMobile ? '0%' : '-10%', top: '-65px', y: [0, -10, 0], rotate: [-4, 2, -4] }
+            ? { left: isMobile ? '0%' : '-10%', top: '-45px', y: [0, -10, 0], rotate: [-4, 2, -4] }
             : phase === 'quarrel'
             ? {
                 left: [isMobile ? '0%' : '-10%', '22%', '10%', isMobile ? '0%' : '-10%'],
-                top: ['-65px', '5px', '0px', '-55px'],
+                top: ['-45px', '5px', '0px', '-35px'],
                 rotate: [-8, 10, -8, -12]
               }
-            : { left: isMobile ? '0%' : '-10%', top: '-65px', y: [0, -8, 0], rotate: -4 }
+            : { left: isMobile ? '0%' : '-10%', top: '-45px', y: [0, -8, 0], rotate: -4 }
         }
         transition={
           phase === 'quarrel'
@@ -47,17 +47,17 @@ export const LovelyBirdsScene: React.FC<LovelyBirdsSceneProps> = ({ phase }) => 
 
       {/* Right Bird - Optimized for Mobile & Desktop Spread */}
       <motion.div
-        initial={{ right: isMobile ? '0%' : '-10%', top: '-65px', rotate: 4 }}
+        initial={{ right: isMobile ? '0%' : '-10%', top: '-45px', rotate: 4 }}
         animate={
           phase === 'closed' || phase === 'opened'
-            ? { right: isMobile ? '0%' : '-10%', top: '-65px', y: [0, -10, 0], rotate: [4, -2, 4] }
+            ? { right: isMobile ? '0%' : '-10%', top: '-45px', y: [0, -10, 0], rotate: [4, -2, 4] }
             : phase === 'quarrel'
             ? {
                 right: [isMobile ? '0%' : '-10%', '22%', '10%', isMobile ? '0%' : '-10%'],
-                top: ['-65px', '5px', '0px', '-55px'],
+                top: ['-45px', '5px', '0px', '-35px'],
                 rotate: [8, -10, 8, 12]
               }
-            : { right: isMobile ? '0%' : '-10%', top: '-65px', y: [0, -8, 0], rotate: 4 }
+            : { right: isMobile ? '0%' : '-10%', top: '-45px', y: [0, -8, 0], rotate: 4 }
         }
         transition={
           phase === 'quarrel'

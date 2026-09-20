@@ -126,7 +126,7 @@ export default function App() {
           />
         </div>
 
-        <main className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 flex flex-col h-full">
+        <main className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 flex flex-col">
           {sharedCard ? (
             <SharedCardView
               cardData={sharedCard}

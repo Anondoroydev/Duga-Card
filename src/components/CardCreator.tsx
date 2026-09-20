@@ -290,7 +290,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 items-stretch lg:overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 items-stretch">
         {/* Transparent Glass Form Section - Compact & non-overflowing */}
         <motion.div 
           initial={{ opacity: 0, x: -15 }}
@@ -614,7 +614,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
           initial={{ opacity: 0, x: 15 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className={`lg:col-span-5 flex-col justify-center items-center h-full min-h-0 ${
+          className={`lg:col-span-5 flex flex-col justify-center items-center min-h-0 ${
             mobileView === 'edit' ? 'hidden lg:flex' : 'flex'
           }`}
         >
@@ -633,7 +633,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
             <motion.div
               animate={{ y: [0, -4, 0] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-              className="relative group pt-16 sm:pt-20"
+              className="relative group pt-10"
             >
               {/* Animated Birds Always Present on Top Corners of Preview Card */}
               <LovelyBirdsScene phase="opened" />
@@ -641,7 +641,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
               {/* Outer golden halo pulse */}
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-500/30 via-yellow-400/40 to-red-500/30 blur-lg opacity-75 group-hover:opacity-100 transition duration-700 pointer-events-none" />
 
-              <div className={`relative rounded-2xl p-4 sm:p-4.5 shadow-2xl border-2 border-amber-400/70 ${currentThemeObj.cardBg} backdrop-blur-xl text-amber-100 overflow-hidden flex flex-col justify-between ring-1 ring-amber-300/30`}>
+              <div className={`relative rounded-2xl p-4 sm:p-4.5 shadow-2xl border-2 border-amber-400/70 ${currentThemeObj.cardBg} text-amber-100 overflow-hidden flex flex-col justify-between ring-1 ring-amber-300/30`}>
                 {/* Corner Traditional Decorative Ornaments */}
                 <div className="absolute top-2 left-2 text-amber-400 text-[11px] opacity-75 select-none">🪷</div>
                 <div className="absolute top-2 right-2 text-amber-400 text-[11px] opacity-75 select-none">🪷</div>
