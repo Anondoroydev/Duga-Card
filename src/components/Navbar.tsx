@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquareHeart, Clock, Volume2, Music, Bell, Disc } from 'lucide-react';
+import { MessageSquareHeart, Clock, Volume2, Music, Disc } from 'lucide-react';
 import { ActiveTab } from '../types';
 import { 
   playDhaakSound, 
-  playShankhoSound, 
   toggleFestiveBGM, 
   setBGMTrack, 
   getCurrentBGMTrack,
@@ -44,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('festive-sound-update', handleSoundUpdate);
   }, []);
   return (
-    <header className="sticky top-0 z-50 bg-gradient-to-r from-red-950/95 via-amber-950/95 to-red-950/95 border-b border-amber-500/30 text-amber-100 shadow-xl backdrop-blur-md">
+    <header className="sticky top-0 z-50 bg-stone-900 border-b border-amber-500/30 text-amber-100 shadow-xl">
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         {/* Logo & Title */}
         <div 
@@ -205,20 +204,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Volume2 className={`w-3.5 h-3.5 ${activeSound === 'dhaak' ? 'text-stone-950 animate-bounce' : 'text-amber-400'}`} />
             <span>{activeSound === 'dhaak' ? 'ঢাক বাজছে' : 'ঢাক'}</span>
-          </button>
-
-          {/* Shankho Button */}
-          <button
-            onClick={playShankhoSound}
-            title={activeSound === 'shankh' ? "শাঁখ বাজছে (থামাতে ক্লিক করুন)" : "পবিত্র শাঁখের ধ্বনি"}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shadow-sm active:scale-95 border ${
-              activeSound === 'shankh'
-                ? 'bg-amber-500 text-stone-950 font-bold border-amber-300 shadow-amber-500/30 scale-105'
-                : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-500/40 hover:scale-105'
-            }`}
-          >
-            <Bell className={`w-3.5 h-3.5 ${activeSound === 'shankh' ? 'text-stone-950 animate-pulse' : 'text-amber-400'}`} />
-            <span>{activeSound === 'shankh' ? 'শাঁখ বাজছে' : 'শাঁখ'}</span>
           </button>
         </div>
       </div>

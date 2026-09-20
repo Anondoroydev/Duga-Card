@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Copy, Check, Share2, Wand2, RefreshCw, MessageCircle, Heart, Image as ImageIcon, Volume2, Bell, Shuffle, CheckCheck, BookOpen } from 'lucide-react';
+import { Send, Copy, Check, Share2, Wand2, RefreshCw, MessageCircle, Heart, Image as ImageIcon, Volume2, Shuffle, CheckCheck, BookOpen } from 'lucide-react';
 import { GreetingCardData } from '../types';
-import { playDhaakBeat, playDhaakSound, playShankhoSound, getActiveSound, ActiveSoundType } from '../utils/audio';
+import { playDhaakBeat, playDhaakSound, getActiveSound, ActiveSoundType } from '../utils/audio';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { LovelyBirdsScene } from './LovelyBirdsScene';
 import { DURGA_IMAGES } from '../data/durgaImages';
 import { generateBengaliFestiveWish } from '../utils/festiveWishGenerator';
 import { buildIndestructibleShareUrl } from '../utils/cardShare';
@@ -94,7 +95,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
   const [selectedImage, setSelectedImage] = useState(DURGA_IMAGES[0]);
   const [relationship, setRelationship] = useState('friend');
   const [mood, setMood] = useState('joyful and poetic');
-  const [showAiHelper, setShowAiHelper] = useState(false);
+  const [showAiHelper, setShowAiHelper] = useState(true);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState('');
   
@@ -121,7 +122,6 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
   const currentThemeObj = THEMES.find(t => t.id === selectedTheme) || THEMES[0];
 
   const triggerFlowerBlessing = () => {
-    playDhaakBeat();
     confetti({
       particleCount: 80,
       spread: 70,
@@ -155,7 +155,6 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
     }
     setAiError('');
     setIsGeneratingAI(true);
-    playDhaakBeat();
 
     try {
       const res = await fetch('/api/generate-wish', {
@@ -207,13 +206,27 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
     // Also persist card to server backend in the background
     setIsCreatingShortLink(true);
     try {
-      await fetch('/api/cards', {
+      const res = await fetch('/api/cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData),
       });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.shortUrl) {
+          // Priority: Use the short link if server successfully created it
+          setShareLink(data.shortUrl);
+        } else {
+          // Fallback: If for some reason short link failed, use the indestructible base64 link
+          setShareLink(directCardUrl);
+        }
+      } else {
+        setShareLink(directCardUrl);
+      }
     } catch (_err) {
-      // Background persistence failure does not affect indestructible link
+      // If server is down, the indestructible base64 link is our safety net
+      setShareLink(directCardUrl);
     } finally {
       setIsCreatingShortLink(false);
       // Automatically switch to 1-page preview on mobile so user sees the complete card
@@ -235,7 +248,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto h-full max-h-full flex flex-col justify-center min-h-0 py-0.5">
+    <div className="w-full max-w-6xl mx-auto h-full flex flex-col min-h-0 py-0.5">
       {/* Sleek Compact Header Bar */}
       <div className="flex items-center justify-between mb-2 shrink-0 px-1">
         <div className="flex items-center gap-2">
@@ -277,45 +290,47 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 items-stretch overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0 items-stretch lg:overflow-hidden">
         {/* Transparent Glass Form Section - Compact & non-overflowing */}
         <motion.div 
           initial={{ opacity: 0, x: -15 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className={`lg:col-span-7 bg-stone-950/35 hover:bg-stone-950/40 border border-amber-400/30 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md text-amber-100 flex flex-col justify-between overflow-y-auto max-h-full relative ${
+          className={`lg:col-span-7 bg-stone-950/70 border border-amber-400/30 rounded-2xl p-3 sm:p-4 shadow-xl text-amber-100 flex flex-col relative min-h-0 ${
             mobileView === 'preview' ? 'hidden lg:flex' : 'flex'
           }`}
         >
           {/* Subtle Ambient Glow */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          <form onSubmit={handleCreateAndShare} className="space-y-2.5 relative z-10 flex flex-col justify-between h-full">
-            {/* Row 1: Recipient and Sender */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 shrink-0">
+          <form onSubmit={handleCreateAndShare} className="flex flex-col h-full relative z-10 min-h-0">
+            {/* Scrollable inputs area */}
+            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3 pb-2">
+              {/* Row 1: Recipient and Sender */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-amber-300/90 mb-1">
-                  যার উদ্দেশে চিঠি (কার কাছে পাঠাচ্ছেন):
+                  প্রাপকের নাম:
                 </label>
                 <input
                   type="text"
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
                   placeholder="যেমন: প্রিয় রাহুল"
-                  className="w-full bg-stone-950/40 backdrop-blur-sm border border-amber-400/30 rounded-xl px-3 py-1.5 sm:py-2 text-amber-100 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all text-xs shadow-inner"
+                  className="w-full bg-stone-950/80 border border-amber-400/30 rounded-xl px-3 py-1.5 sm:py-2 text-amber-100 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all text-xs shadow-inner"
                   required
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-amber-300/90 mb-1">
-                  আপনার নাম (From):
+                  প্রেরকের নাম (আপনার নাম):
                 </label>
                 <input
                   type="text"
                   value={sender}
                   onChange={(e) => setSender(e.target.value)}
                   placeholder="যেমন: অজয় সরকার"
-                  className="w-full bg-stone-950/40 backdrop-blur-sm border border-amber-400/30 rounded-xl px-3 py-1.5 sm:py-2 text-amber-100 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all text-xs shadow-inner"
+                  className="w-full bg-stone-950/80 border border-amber-400/30 rounded-xl px-3 py-1.5 sm:py-2 text-amber-100 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all text-xs shadow-inner"
                   required
                 />
               </div>
@@ -324,7 +339,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
             {/* Row 2: Theme Selector (Compact Chips) */}
             <div className="shrink-0">
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-amber-300/90 mb-1">
-                কার্ডের থিম (Theme):
+                পছন্দের থিম:
               </label>
               <div className="grid grid-cols-4 gap-1.5">
                 {THEMES.map((theme) => (
@@ -348,7 +363,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
             <div className="shrink-0">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-300 flex items-center gap-1">
-                  <ImageIcon className="w-3.5 h-3.5 text-amber-400" /> মা দুর্গার রূপ (১৬টি প্রতিমা):
+                  <ImageIcon className="w-3.5 h-3.5 text-amber-400" /> প্রতিমা পছন্দ করুন:
                 </span>
                 <span className="text-[10px] text-amber-400/75">স্ক্রোল করে পছন্দ করুন</span>
               </div>
@@ -383,11 +398,76 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
               </div>
             </div>
 
-            {/* Row 4: Ready-made Bengali Wishes (আগে থেকেই প্রস্তুত শুভেচ্ছা) */}
-            <div className="bg-stone-950/30 backdrop-blur-sm p-2.5 rounded-xl border border-amber-400/25 space-y-2 shrink-0">
+            {/* Row 4: Magic AI & Ready-made Bengali Wishes */}
+            <div className="bg-stone-950/70 p-2.5 rounded-xl border border-amber-400/25 space-y-2 shrink-0 relative overflow-hidden group">
+              {/* Premium Glow for AI section */}
+              <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/15 rounded-full blur-2xl group-hover:bg-amber-500/25 transition-all duration-700" />
+              
+              {/* AI Helper - High Priority */}
+              <div className="pb-1.5 mb-1.5 border-b border-amber-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                    <Wand2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> ম্যাজিক এআই (AI) দিয়ে লিখুন:
+                  </span>
+                  <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold border border-amber-500/30">PREMIUM</span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
+                  <div className="sm:col-span-4">
+                    <select
+                      value={relationship}
+                      onChange={(e) => {
+                        setRelationship(e.target.value);
+                        if (READY_WISHES[e.target.value]) {
+                          setActiveWishCategory(e.target.value);
+                        }
+                      }}
+                      className="w-full bg-stone-950/50 border border-amber-500/30 rounded-lg px-2 py-1.5 text-[11px] text-amber-100 focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="friend" className="bg-stone-900 text-amber-100">বন্ধু</option>
+                      <option value="family" className="bg-stone-900 text-amber-100">পরিবার</option>
+                      <option value="colleague" className="bg-stone-900 text-amber-100">সহকর্মী</option>
+                      <option value="love" className="bg-stone-900 text-amber-100">প্রিয়জন</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-4">
+                    <select
+                      value={mood}
+                      onChange={(e) => setMood(e.target.value)}
+                      className="w-full bg-stone-950/50 border border-amber-500/30 rounded-lg px-2 py-1.5 text-[11px] text-amber-100 focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="joyful and poetic" className="bg-stone-900 text-amber-100">আনন্দময়</option>
+                      <option value="emotional and warm" className="bg-stone-900 text-amber-100">আন্তরিক</option>
+                      <option value="short and sweet" className="bg-stone-900 text-amber-100">সংক্ষিপ্ত</option>
+                      <option value="traditional and festive" className="bg-stone-900 text-amber-100">ঐতিহ্যবাহী</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-4">
+                    <button
+                      type="button"
+                      onClick={handleGenerateAI}
+                      disabled={isGeneratingAI}
+                      className="w-full bg-gradient-to-r from-amber-500 to-red-500 hover:from-amber-400 hover:to-red-400 text-white font-bold py-1.5 px-2 rounded-lg text-[11px] transition-all shadow-md flex items-center justify-center gap-1 disabled:opacity-50 active:scale-95"
+                    >
+                      {isGeneratingAI ? (
+                        <>
+                          <RefreshCw className="w-3 h-3 animate-spin" /> তৈরি হচ্ছে...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-3 h-3" /> এআই দিয়ে লিখুন
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {aiError && <p className="text-[10px] text-rose-400 col-span-12 text-center mt-1">{aiError}</p>}
+                </div>
+              </div>
+
+              {/* Ready-made Suggestions - Secondary Priority */}
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-amber-300 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-amber-400" /> রেডিমেড শারদীয় শুভেচ্ছা (আগে থেকেই প্রস্তুত):
+                  <BookOpen className="w-3.5 h-3.5 text-amber-400" /> শুভেচ্ছা বার্তা পছন্দ করুন:
                 </span>
                 <button
                   type="button"
@@ -445,81 +525,13 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
                 })}
               </div>
 
-              {/* Optional AI generator toggle */}
-              <div className="pt-1 border-t border-amber-500/15">
-                <button
-                  type="button"
-                  onClick={() => setShowAiHelper(!showAiHelper)}
-                  className="text-[10px] text-amber-400/90 hover:text-amber-300 flex items-center justify-between w-full"
-                >
-                  <span className="flex items-center gap-1">
-                    কিংবা এআই (AI) দিয়ে নতুন লিখে নিতে চান?
-                  </span>
-                  <span className="text-[9px] underline">
-                    {showAiHelper ? 'লুকান ▲' : 'এআই বিকল্প খুলুন ▼'}
-                  </span>
-                </button>
-
-                {showAiHelper && (
-                  <div className="mt-2 pt-2 border-t border-amber-500/20 grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
-                    <div className="sm:col-span-4">
-                      <select
-                        value={relationship}
-                        onChange={(e) => {
-                          setRelationship(e.target.value);
-                          if (READY_WISHES[e.target.value]) {
-                            setActiveWishCategory(e.target.value);
-                          }
-                        }}
-                        className="w-full bg-stone-950/50 border border-amber-500/30 rounded-lg px-2 py-1 text-[10px] text-amber-100 focus:outline-none focus:border-amber-400"
-                      >
-                        <option value="friend" className="bg-stone-900 text-amber-100">বন্ধু (Friend)</option>
-                        <option value="family" className="bg-stone-900 text-amber-100">পরিবার (Family)</option>
-                        <option value="colleague" className="bg-stone-900 text-amber-100">সহকর্মী (Colleague)</option>
-                        <option value="love" className="bg-stone-900 text-amber-100">প্রিয়জন (Loved One)</option>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-4">
-                      <select
-                        value={mood}
-                        onChange={(e) => setMood(e.target.value)}
-                        className="w-full bg-stone-950/50 border border-amber-500/30 rounded-lg px-2 py-1 text-[10px] text-amber-100 focus:outline-none focus:border-amber-400"
-                      >
-                        <option value="joyful and poetic" className="bg-stone-900 text-amber-100">আনন্দময় ও কাব্যিক</option>
-                        <option value="emotional and warm" className="bg-stone-900 text-amber-100">আন্তরিক ও আবেগঘন</option>
-                        <option value="short and sweet" className="bg-stone-900 text-amber-100">সংক্ষিপ্ত ও মিষ্টি</option>
-                        <option value="traditional and festive" className="bg-stone-900 text-amber-100">ঐতিহ্যবাহী</option>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-4">
-                      <button
-                        type="button"
-                        onClick={handleGenerateAI}
-                        disabled={isGeneratingAI}
-                        className="w-full bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-medium py-1 px-2 rounded-lg text-[10px] transition-all shadow-sm flex items-center justify-center gap-1 disabled:opacity-50"
-                      >
-                        {isGeneratingAI ? (
-                          <>
-                            <RefreshCw className="w-3 h-3 animate-spin" /> তৈরি হচ্ছে...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="w-3 h-3" /> এআই দিয়ে লিখুন
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {aiError && <p className="text-[10px] text-rose-400 col-span-12 text-center">{aiError}</p>}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Row 5: Message Input & Quick Customization */}
             <div className="shrink-0">
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-amber-300/90">
-                  নির্বাচিত শুভেচ্ছা বার্তা (প্রয়োজনে সম্পাদনা করতে পারেন):
+                  শুভেচ্ছা বার্তা (সম্পাদনা করুন):
                 </label>
                 <span className="text-[9px] text-amber-400/70">সরাসরি টাইপও করতে পারেন</span>
               </div>
@@ -527,32 +539,35 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={2}
-                className="w-full bg-stone-950/40 backdrop-blur-sm border border-amber-400/30 rounded-xl p-2.5 text-amber-100 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all text-xs leading-relaxed shadow-inner resize-none"
+                className="w-full bg-stone-950/80 border border-amber-400/30 rounded-xl p-2.5 text-amber-100 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all text-xs leading-relaxed shadow-inner resize-none"
                 required
               />
             </div>
+          </div>
 
-            {/* Row 6: Submit / Generate Link Button */}
-            <button
-              type="submit"
-              disabled={isCreatingShortLink}
-              className="w-full shrink-0 bg-gradient-to-r from-amber-500 via-red-600 to-amber-600 hover:from-amber-400 hover:to-red-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-red-950/50 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all transform hover:-translate-y-0.5 disabled:opacity-75"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>{isCreatingShortLink ? 'শর্ট লিংক তৈরি হচ্ছে...' : 'শেয়ার করার শর্ট লিংক তৈরি করুন'}</span>
-            </button>
+          {/* Row 6: Submit / Generate Link Button - Always at the bottom */}
+            <div className="pt-2 border-t border-amber-500/20 shrink-0">
+              <button
+                type="submit"
+                disabled={isCreatingShortLink}
+                className="w-full bg-gradient-to-r from-amber-500 via-red-600 to-amber-600 hover:from-amber-400 hover:to-red-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-red-950/50 flex items-center justify-center gap-2 text-sm sm:text-base transition-all transform hover:-translate-y-0.5 disabled:opacity-75 active:scale-95"
+              >
+                <Share2 className="w-5 h-5" />
+                <span>{isCreatingShortLink ? 'তৈরি হচ্ছে...' : 'লিংক তৈরি করে শেয়ার করুন'}</span>
+              </button>
+            </div>
           </form>
 
           {/* Share Link Modal/Box if generated */}
           {shareLink && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mt-2.5 bg-stone-950/60 backdrop-blur-md border border-amber-400/40 rounded-xl p-3 space-y-2 shadow-inner shrink-0"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2.5 bg-stone-950 border border-emerald-500/40 rounded-xl p-3 space-y-2 shadow-2xl shrink-0 z-20"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> কার্ড শেয়ার লিংক প্রস্তুত!
+                  <Check className="w-3.5 h-3.5 text-emerald-400" /> লিংক প্রস্তুত!
                 </span>
                 <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-medium border border-emerald-500/30">
                   সরাসরি লিংক
@@ -599,10 +614,12 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
           initial={{ opacity: 0, x: 15 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:col-span-5 flex flex-col justify-center items-center h-full min-h-0"
+          className={`lg:col-span-5 flex-col justify-center items-center h-full min-h-0 ${
+            mobileView === 'edit' ? 'hidden lg:flex' : 'flex'
+          }`}
         >
           {/* Outer Card Wrapper - Sized to fit screen */}
-          <div className="w-full max-w-sm">
+          <div className="w-full max-w-sm px-2 sm:px-0">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-300/90 mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 লাইভ কার্ড প্রিভিউ
@@ -616,8 +633,11 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
             <motion.div
               animate={{ y: [0, -4, 0] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-              className="relative group"
+              className="relative group pt-16 sm:pt-20"
             >
+              {/* Animated Birds Always Present on Top Corners of Preview Card */}
+              <LovelyBirdsScene phase="opened" />
+
               {/* Outer golden halo pulse */}
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-500/30 via-yellow-400/40 to-red-500/30 blur-lg opacity-75 group-hover:opacity-100 transition duration-700 pointer-events-none" />
 
@@ -716,14 +736,6 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
                       title="আসল লাইভ ঢাকের বোল শুনুন"
                     >
                       <Volume2 className="w-3 h-3 text-amber-300" /> 🥁 ঢাক
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { playShankhoSound(); }}
-                      className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2.5 py-1 rounded-full text-[11px] font-serif border border-amber-400/40 transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-sm"
-                      title="পবিত্র শাঁখের ধ্বনি"
-                    >
-                      <Bell className="w-3 h-3 text-amber-300" /> 🐚 শাঁখ
                     </button>
                   </div>
                 </div>

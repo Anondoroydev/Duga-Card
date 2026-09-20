@@ -1,25 +1,12 @@
 import React, { useState } from 'react';
-import { Heart, Volume2, RotateCcw, Send, MessageSquareHeart, Mail, Bell } from 'lucide-react';
-import { playDhaakSound, playShankhoSound, playDhaakBeat } from '../utils/audio';
+import { Heart, Volume2, RotateCcw, Send, MessageSquareHeart, Mail } from 'lucide-react';
+import { playDhaakSound, playDhaakBeat } from '../utils/audio';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { LovelyBirdsScene } from './LovelyBirdsScene';
 
 import whitePigeonImg from '../assets/images/white_pigeon_bird_1789841410480.jpg';
 import colorfulBirdImg from '../assets/images/colorful_bird_1789841425106.jpg';
-
-const animatedBirdGif = 'https://cdn.pixabay.com/animation/2024/01/18/16/30/16-30-44-408_512.gif';
-
-interface SharedCardViewProps {
-  cardData: {
-    from: string;
-    to: string;
-    message: string;
-    theme: string;
-    imageUrl?: string;
-  };
-  onReset: () => void;
-  onPostToWall: (sender: string, message: string, theme: string) => void;
-}
 
 const THEMES: Record<string, { bg: string; cardBg: string; badge: string }> = {
   'royal-maroon': {
@@ -44,78 +31,17 @@ const THEMES: Record<string, { bg: string; cardBg: string; badge: string }> = {
   }
 };
 
-/* Pure Flying Doves Component (Always visible on PC & Mobile, smooth graceful motion) */
-const LovelyBirdsScene: React.FC<{ phase: string }> = ({ phase }) => {
-  return (
-    <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
-      {/* Left Bird - Always visible at top-left corner without clipping on PC */}
-      <motion.div
-        initial={{ left: '0%', top: '-45px', rotate: -4 }}
-        animate={
-          phase === 'closed' || phase === 'opened'
-            ? { left: '0%', top: '-45px', y: [0, -10, 0], rotate: [-4, 2, -4] }
-            : phase === 'quarrel'
-            ? {
-                left: ['0%', '22%', '10%', '0%'],
-                top: ['-45px', '5px', '0px', '-35px'],
-                rotate: [-8, 10, -8, -12]
-              }
-            : { left: '0%', top: '-45px', y: [0, -8, 0], rotate: -4 }
-        }
-        transition={
-          phase === 'quarrel'
-            ? { duration: 2.0, ease: "easeInOut" }
-            : { repeat: Infinity, duration: 3.5, ease: "easeInOut" }
-        }
-        className="absolute filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)]"
-      >
-        <div className="w-32 h-32 sm:w-48 sm:h-48 flex items-center justify-center">
-          <motion.img
-            src={animatedBirdGif}
-            alt="Pixabay Animated Flying Bird GIF"
-            referrerPolicy="no-referrer"
-            animate={{ scaleY: [1, 0.92, 1] }}
-            transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-            className="w-full h-full object-contain filter drop-shadow-[0_6px_16px_rgba(255,255,255,0.85)]"
-          />
-        </div>
-      </motion.div>
-
-      {/* Right Bird - Always visible at top-right corner without clipping on PC */}
-      <motion.div
-        initial={{ right: '0%', top: '-45px', rotate: 4 }}
-        animate={
-          phase === 'closed' || phase === 'opened'
-            ? { right: '0%', top: '-45px', y: [0, -10, 0], rotate: [4, -2, 4] }
-            : phase === 'quarrel'
-            ? {
-                right: ['0%', '22%', '10%', '0%'],
-                top: ['-45px', '5px', '0px', '-35px'],
-                rotate: [8, -10, 8, 12]
-              }
-            : { right: '0%', top: '-45px', y: [0, -8, 0], rotate: 4 }
-        }
-        transition={
-          phase === 'quarrel'
-            ? { duration: 2.0, ease: "easeInOut", delay: 0.1 }
-            : { repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 0.3 }
-        }
-        className="absolute filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)]"
-      >
-        <div className="w-32 h-32 sm:w-48 sm:h-48 flex items-center justify-center">
-          <motion.img
-            src={animatedBirdGif}
-            alt="Pixabay Animated Flying Bird GIF"
-            referrerPolicy="no-referrer"
-            animate={{ scaleY: [1, 0.92, 1] }}
-            transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-            className="w-full h-full object-contain -scale-x-100 filter drop-shadow-[0_6px_16px_rgba(255,255,255,0.85)]"
-          />
-        </div>
-      </motion.div>
-    </div>
-  );
-};
+interface SharedCardViewProps {
+  cardData: {
+    from: string;
+    to: string;
+    message: string;
+    theme: string;
+    imageUrl?: string;
+  };
+  onReset: () => void;
+  onPostToWall: (sender: string, message: string, theme: string) => void;
+}
 
 export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onReset, onPostToWall }) => {
   const [isOpened, setIsOpened] = useState(false);
@@ -128,7 +54,6 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
   const themeObj = THEMES[cardData.theme] || THEMES['royal-maroon'];
 
   const triggerFlowerBlessing = () => {
-    playDhaakBeat();
     // Immediate big festive flower confetti explosion
     confetti({
       particleCount: 140,
@@ -160,12 +85,10 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
     if (isOpening || isOpened) return;
     setIsOpening(true);
     setOpeningPhase('quarrel');
-    playShankhoSound();
 
     // Doves fly towards center flap and pull apart gracefully
     setTimeout(() => {
       setOpeningPhase('ripping');
-      playDhaakBeat();
       triggerFlowerBlessing();
     }, 2000);
 
@@ -197,7 +120,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
       <div className="absolute top-10 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-xl w-full mx-auto relative z-10 space-y-6">
+      <div className="max-w-xl w-full mx-auto relative z-10 space-y-6 pt-16 sm:pt-20">
         {/* Top bar with back to home option */}
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-amber-300/80 font-serif flex items-center gap-1.5">
@@ -218,7 +141,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="bg-gradient-to-br from-red-950/20 via-amber-950/15 to-red-950/25 backdrop-blur-md border-2 border-amber-300/80 rounded-3xl p-5 sm:p-9 shadow-2xl text-center space-y-5 relative overflow-visible ring-4 ring-amber-400/30 group cursor-pointer"
+            className="bg-gradient-to-br from-red-950/40 via-amber-950/30 to-red-950/40 border-2 border-amber-300/80 rounded-3xl p-5 sm:p-9 shadow-2xl text-center space-y-5 relative overflow-visible ring-4 ring-amber-400/30 group cursor-pointer"
             style={{ perspective: '1200px' }}
             onClick={handleOpenCard}
           >
@@ -236,7 +159,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                     : { x: 0, rotate: 0, opacity: 1, scale: 1 }
                 }
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-br from-red-900/85 via-red-950/80 to-amber-900/85 backdrop-blur-md border-2 border-r-0 border-amber-300/90 rounded-l-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-end"
+                className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-br from-red-900/95 via-red-950/95 to-amber-900/95 border-2 border-r-0 border-amber-300/90 rounded-l-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-end"
               >
                 {/* White inner paper tear fibers texture */}
                 <div className="absolute right-0 top-0 bottom-0 w-2 bg-amber-100/90 shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
@@ -253,7 +176,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                     : { x: 0, rotate: 0, opacity: 1, scale: 1 }
                 }
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-bl from-red-900/85 via-red-950/80 to-amber-900/85 backdrop-blur-md border-2 border-l-0 border-amber-300/90 rounded-r-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-start"
+                className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-bl from-red-900/95 via-red-950/95 to-amber-900/95 border-2 border-l-0 border-amber-300/90 rounded-r-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-start"
               >
                 {/* White inner paper tear fibers texture */}
                 <div className="absolute left-0 top-0 bottom-0 w-2 bg-amber-100 shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
@@ -355,7 +278,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
           /* Opened Greeting Card View */
           <>
             <div className="text-center space-y-2">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm backdrop-blur-sm">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm">
                 শারদীয়ার বিশেষ শুভেচ্ছা কার্ড
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold font-serif text-amber-200 tracking-wide drop-shadow-md">
@@ -375,55 +298,48 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
 
               <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-amber-500/30 via-yellow-400/50 to-red-500/30 blur-xl opacity-85 group-hover:opacity-100 transition duration-1000 animate-pulse pointer-events-none" />
 
-              <div className={`rounded-3xl p-6 sm:p-9 shadow-2xl border-2 border-amber-400/70 ${themeObj.cardBg} backdrop-blur-xl relative overflow-hidden ring-2 ring-amber-300/30`}>
+              <div className={`rounded-3xl p-6 sm:p-9 shadow-2xl border-2 border-amber-400/70 ${themeObj.cardBg} relative overflow-hidden ring-2 ring-amber-300/30`}>
                 {/* Traditional Corner Ornaments */}
                 <div className="absolute top-2 left-2 text-amber-400 text-xs opacity-75 select-none">🪷</div>
                 <div className="absolute top-2 right-2 text-amber-400 text-xs opacity-75 select-none">🪷</div>
 
                 {/* Card Top */}
-                <div className="flex items-center justify-between border-b border-amber-500/30 pb-3 mb-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-amber-500/25 flex items-center justify-center border border-amber-400/50 shadow-sm text-sm">
+                <div className="flex items-center justify-between border-b border-amber-500/30 pb-2.5 mb-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2.5">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-500/25 flex items-center justify-center border border-amber-400/50 shadow-sm text-xs sm:text-sm">
                       🪔
                     </div>
-                    <span className="font-serif font-bold text-amber-200 text-sm tracking-wide">
+                    <span className="font-serif font-bold text-amber-200 text-xs sm:text-sm tracking-wide">
                       দুর্গাপূজা শুভেচ্ছা ২০২৬
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <button
                       onClick={triggerFlowerBlessing}
                       title="পুষ্পাঞ্জলি দিন"
-                      className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2.5 py-1 rounded-full text-xs font-medium border border-amber-400/40 transition-all backdrop-blur-sm"
+                      className="flex items-center gap-1 bg-amber-500/30 hover:bg-amber-500/40 text-amber-200 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border border-amber-400/40 transition-all"
                     >
-                      🌸 পুষ্পাঞ্জলি
+                      🌸 <span>পুষ্পাঞ্জলি</span>
                     </button>
                     <button
                       onClick={playDhaakSound}
                       title="ঢাক বাজান"
-                      className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2.5 py-1 rounded-full text-xs font-medium border border-amber-400/40 transition-all backdrop-blur-sm"
+                      className="flex items-center gap-1 bg-amber-500/30 hover:bg-amber-500/40 text-amber-200 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border border-amber-400/40 transition-all"
                     >
-                      <Volume2 className="w-3 h-3 text-amber-400" /> ঢাক
-                    </button>
-                    <button
-                      onClick={playShankhoSound}
-                      title="শাঁখ বাজান"
-                      className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2.5 py-1 rounded-full text-xs font-medium border border-amber-400/40 transition-all backdrop-blur-sm"
-                    >
-                      <Bell className="w-3 h-3 text-amber-400" /> শাঁখ
+                      <Volume2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" /> <span>ঢাক</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Divine Sanskrit Shlok Banner */}
-                <div className="py-1 px-3 my-2 rounded-xl bg-amber-500/10 border border-amber-400/20 text-center backdrop-blur-sm">
-                  <p className="text-[10px] sm:text-[11px] font-serif text-amber-200/90 tracking-wide">
+                <div className="py-0.5 sm:py-1 px-3 my-1.5 sm:my-2 rounded-xl bg-amber-500/20 border border-amber-400/30 text-center">
+                  <p className="text-[9px] sm:text-[11px] font-serif text-amber-200/90 tracking-wide">
                     সর্বমঙ্গলমঙ্গল্যে শিবে সর্বার্থসাধিকে। শরণ্যে ত্র্যম্বকে গৌরি নারায়ণি নমোঽস্তু তে॥
                   </p>
                 </div>
 
                 {/* Divine Festive Banner */}
-                <div className="mb-5 rounded-2xl overflow-hidden border-2 border-amber-400/50 h-48 sm:h-64 shadow-lg relative group bg-stone-950">
+                <div className="mb-4 rounded-2xl overflow-hidden border-2 border-amber-400/50 h-40 sm:h-64 shadow-lg relative group bg-stone-950">
                   <img
                     src={cardData.imageUrl || '/slide1.jpg'}
                     alt="Maa Durga Artwork"
@@ -437,31 +353,31 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                 </div>
 
                 {/* To */}
-                <div className="mb-3 space-y-1">
-                  <p className="text-xs text-amber-300/80 uppercase tracking-widest font-semibold">প্রিয়:</p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white font-serif tracking-tight drop-shadow-sm">
+                <div className="mb-2 space-y-0.5">
+                  <p className="text-[10px] text-amber-300/80 uppercase tracking-widest font-semibold">প্রিয়:</p>
+                  <h3 className="text-xl sm:text-3xl font-bold text-white font-serif tracking-tight drop-shadow-sm">
                     {cardData.to}
                   </h3>
                 </div>
 
                 {/* Message */}
-                <div className="bg-stone-950/35 backdrop-blur-md p-5 sm:p-6 rounded-2xl border border-amber-400/30 mb-6 shadow-inner">
-                  <p className="text-amber-100 text-sm sm:text-base leading-relaxed font-serif italic whitespace-pre-wrap">
+                <div className="bg-stone-950/60 p-4 sm:p-6 rounded-2xl border border-amber-400/30 mb-4 shadow-inner">
+                  <p className="text-amber-100 text-xs sm:text-base leading-relaxed font-serif italic whitespace-pre-wrap">
                     "{cardData.message}"
                   </p>
                 </div>
 
                 {/* From */}
-                <div className="pt-3 border-t border-amber-500/30 flex items-center justify-between">
+                <div className="pt-2.5 border-t border-amber-500/30 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-amber-300/70 uppercase tracking-wider">শুভেচ্ছান্তে:</p>
-                    <h4 className="text-base sm:text-lg font-bold text-amber-200 font-serif">
+                    <p className="text-[10px] text-amber-300/70 uppercase tracking-wider">শুভেচ্ছান্তে:</p>
+                    <h4 className="text-sm sm:text-lg font-bold text-amber-200 font-serif">
                       {cardData.from}
                     </h4>
                   </div>
-                  <div className="flex items-center gap-1.5 text-amber-400 bg-amber-500/20 px-3 py-1.5 rounded-full border border-amber-400/40">
-                    <Heart className="w-4 h-4 fill-amber-400" />
-                    <span className="text-xs font-semibold">শুভ দুর্গোৎসব</span>
+                  <div className="flex items-center gap-1.5 text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-full border border-amber-400/40">
+                    <Heart className="w-3.5 h-3.5 fill-amber-400" />
+                    <span className="text-[10px] font-semibold">শুভ দুর্গোৎসব</span>
                   </div>
                 </div>
               </div>

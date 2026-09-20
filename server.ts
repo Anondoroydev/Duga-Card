@@ -256,6 +256,11 @@ app.post("/api/cards", async (req, res) => {
   }
 });
 
+// API: List all cards
+app.get("/api/cards", (req, res) => {
+  res.json({ success: true, cards: Array.from(shortCards.values()) });
+});
+
 // API: Get card by ID (supports short ID, disk lookup, or direct base64 encoded token)
 app.get("/api/cards/:id", (req, res) => {
   const paramId = req.params.id;

@@ -85,16 +85,28 @@ export default function App() {
     <div 
       className="h-screen max-h-screen w-full text-amber-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative bg-stone-950 overflow-hidden"
     >
-      {/* Background Slideshow Images - Fixed, Clear & Vibrant */}
-      {DURGA_IMAGES.map((slide, index) => (
-        <div
-          key={`bg-slide-${index}`}
-          className={`fixed inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out z-0 ${
-            index === currentSlide ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
-          }`}
-          style={{ backgroundImage: `url('${slide}')`, transitionProperty: 'opacity, transform', transitionDuration: '1.5s' }}
-        />
-      ))}
+      {/* Background Slideshow Images - Optimized for Mobile Performance */}
+      {DURGA_IMAGES.map((slide, index) => {
+        // Only render current, next and previous to save memory
+        const isVisible = Math.abs(index - currentSlide) <= 1 || 
+                         (currentSlide === 0 && index === DURGA_IMAGES.length - 1) ||
+                         (currentSlide === DURGA_IMAGES.length - 1 && index === 0);
+        
+        if (!isVisible) return null;
+
+        return (
+          <div
+            key={`bg-slide-${index}`}
+            className={`fixed inset-0 bg-cover bg-center z-0 transition-opacity duration-[2000ms] ease-in-out ${
+              index === currentSlide ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ 
+              backgroundImage: `url('${slide}')`, 
+              willChange: 'opacity'
+            }}
+          />
+        );
+      })}
 
       {/* Gentle subtle dark overlay so Maa Durga background images remain crystal clear */}
       <div className="fixed inset-0 bg-gradient-to-b from-black/35 via-black/10 to-black/40 pointer-events-none z-0" />
@@ -114,7 +126,7 @@ export default function App() {
           />
         </div>
 
-        <main className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-2 sm:p-3 flex flex-col">
+        <main className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 flex flex-col h-full">
           {sharedCard ? (
             <SharedCardView
               cardData={sharedCard}
