@@ -1,3 +1,4 @@
+import LZString from 'lz-string';
 import { GreetingCardData } from '../types';
 
 interface CompactCardPayload {
@@ -6,36 +7,34 @@ interface CompactCardPayload {
   m: string;       // message
   th: string;      // theme
   i?: string;      // imageUrl
-  ts?: number;     // timestamp
 }
 
 /**
- * Safely encodes a card into a URL-safe Base64 string that supports full UTF-8 (Bengali, emojis, etc.)
+ * Safely encodes a card into a URL-safe string using LZString compression.
+ * Uses a positional array to minimize key-value overhead for the shortest possible URL.
  */
 export function encodeCardToParam(card: GreetingCardData): string {
   try {
-    const payload: CompactCardPayload = {
-      f: (card.from || '').trim(),
-      t: (card.to || '').trim(),
-      m: (card.message || '').trim(),
-      th: card.theme || 'royal-maroon',
-      i: card.imageUrl || '',
-      ts: Date.now(),
-    };
+    // [0: from, 1: to, 2: message, 3: theme, 4: imageUrl]
+    const payload: any[] = [
+      (card.from || '').trim(),
+      (card.to || '').trim(),
+      (card.message || '').trim()
+    ];
+
+    // Optional fields only added if they are non-default
+    if (card.theme && card.theme !== 'royal-maroon') {
+      payload[3] = card.theme;
+    } else if (card.imageUrl) {
+      payload[3] = 0; // placeholder to keep index 4 correct
+    }
+
+    if (card.imageUrl && !card.imageUrl.includes('durga_logo')) {
+      payload[4] = card.imageUrl;
+    }
 
     const json = JSON.stringify(payload);
-    const bytes = new TextEncoder().encode(json);
-    let binary = '';
-    const len = bytes.byteLength;
-    for (let j = 0; j < len; j++) {
-      binary += String.fromCharCode(bytes[j]);
-    }
-    
-    // URL-safe Base64 (RFC 4648)
-    return btoa(binary)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+    return LZString.compressToEncodedURIComponent(json);
   } catch (err) {
     console.error('Failed to encode card to param:', err);
     return '';
@@ -43,10 +42,46 @@ export function encodeCardToParam(card: GreetingCardData): string {
 }
 
 /**
- * Safely decodes a card from a URL-safe Base64 string with full UTF-8 support
+ * Safely decodes a card from an LZString compressed param.
  */
 export function decodeCardFromParam(param: string): GreetingCardData | null {
   if (!param || typeof param !== 'string') return null;
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(param);
+    if (!json) {
+      return decodeBase64Fallback(param);
+    }
+    
+    const data = JSON.parse(json);
+    
+    if (Array.isArray(data)) {
+      // Positional array format: [from, to, message, theme?, imageUrl?]
+      return {
+        from: data[0] || '',
+        to: data[1] || '',
+        message: data[2] || '',
+        theme: data[3] && typeof data[3] === 'string' ? data[3] : 'royal-maroon',
+        imageUrl: data[4] && typeof data[4] === 'string' ? data[4] : undefined
+      };
+    }
+
+    // Legacy object format fallback
+    return {
+      from: data.f || data.from || '',
+      to: data.t || data.to || '',
+      message: data.m || data.message || '',
+      theme: data.th || data.theme || 'royal-maroon',
+      imageUrl: data.i || data.imageUrl || undefined,
+    };
+  } catch (err) {
+    return decodeBase64Fallback(param);
+  }
+}
+
+/**
+ * Fallback decoder for old Base64 URLs
+ */
+function decodeBase64Fallback(param: string): GreetingCardData | null {
   try {
     let clean = param.trim().replace(/-/g, '+').replace(/_/g, '/');
     while (clean.length % 4 !== 0) {
@@ -60,27 +95,18 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
     }
 
     const json = new TextDecoder().decode(bytes);
-    const data = JSON.parse(json) as Partial<CompactCardPayload & GreetingCardData>;
-
-    const from = data.f || data.from || '';
-    const to = data.t || data.to || '';
-    const message = data.m || data.message || '';
-    const theme = data.th || data.theme || 'royal-maroon';
-    const imageUrl = data.i || data.imageUrl || undefined;
-
-    if (from || to || message) {
-      return {
-        from,
-        to,
-        message,
-        theme: (theme as any) || 'royal-maroon',
-        imageUrl: imageUrl || undefined,
-      };
-    }
-  } catch (err) {
-    console.warn('Failed to decode card param:', err);
+    const data = JSON.parse(json);
+    
+    return {
+      from: data.f || data.from || '',
+      to: data.t || data.to || '',
+      message: data.m || data.message || '',
+      theme: data.th || data.theme || 'royal-maroon',
+      imageUrl: data.i || data.imageUrl || undefined,
+    };
+  } catch (e) {
+    return null;
   }
-  return null;
 }
 
 /**
