@@ -11,30 +11,27 @@ interface CompactCardPayload {
 
 /**
  * Safely encodes a card into a URL-safe string using LZString compression.
- * Uses a positional array to minimize key-value overhead for the shortest possible URL.
+ * Uses a pipe-separated format to eliminate JSON overhead for the shortest possible URL.
  */
 export function encodeCardToParam(card: GreetingCardData): string {
   try {
-    // [0: from, 1: to, 2: message, 3: theme, 4: imageUrl]
-    const payload: any[] = [
+    // Format: from|to|message|theme|imageUrl
+    // We use | as a separator because it's rare in names/messages and compresses well
+    const parts = [
       (card.from || '').trim(),
       (card.to || '').trim(),
-      (card.message || '').trim()
+      (card.message || '').trim(),
+      card.theme === 'royal-maroon' ? '' : card.theme,
+      (card.imageUrl && !card.imageUrl.includes('durga_logo')) ? card.imageUrl : ''
     ];
 
-    // Optional fields only added if they are non-default
-    if (card.theme && card.theme !== 'royal-maroon') {
-      payload[3] = card.theme;
-    } else if (card.imageUrl) {
-      payload[3] = 0; // placeholder to keep index 4 correct
+    // Remove empty trailing parts to save even more space
+    while (parts.length > 3 && !parts[parts.length - 1]) {
+      parts.pop();
     }
 
-    if (card.imageUrl && !card.imageUrl.includes('durga_logo')) {
-      payload[4] = card.imageUrl;
-    }
-
-    const json = JSON.stringify(payload);
-    return LZString.compressToEncodedURIComponent(json);
+    const raw = parts.join('|');
+    return LZString.compressToEncodedURIComponent(raw);
   } catch (err) {
     console.error('Failed to encode card to param:', err);
     return '';
@@ -47,15 +44,27 @@ export function encodeCardToParam(card: GreetingCardData): string {
 export function decodeCardFromParam(param: string): GreetingCardData | null {
   if (!param || typeof param !== 'string') return null;
   try {
-    const json = LZString.decompressFromEncodedURIComponent(param);
-    if (!json) {
+    const decompressed = LZString.decompressFromEncodedURIComponent(param);
+    if (!decompressed) {
       return decodeBase64Fallback(param);
     }
     
-    const data = JSON.parse(json);
+    // Try to parse as pipe-separated first
+    if (decompressed.includes('|')) {
+      const parts = decompressed.split('|');
+      return {
+        from: parts[0] || '',
+        to: parts[1] || '',
+        message: parts[2] || '',
+        theme: (parts[3] || 'royal-maroon') as any,
+        imageUrl: parts[4] || undefined
+      };
+    }
+
+    // Fallback: Try to parse as JSON (for older links)
+    const data = JSON.parse(decompressed);
     
     if (Array.isArray(data)) {
-      // Positional array format: [from, to, message, theme?, imageUrl?]
       return {
         from: data[0] || '',
         to: data[1] || '',
@@ -65,7 +74,6 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
       };
     }
 
-    // Legacy object format fallback
     return {
       from: data.f || data.from || '',
       to: data.t || data.to || '',
