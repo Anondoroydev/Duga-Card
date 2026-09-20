@@ -14,4 +14,4 @@ const config = {
 };
 
 const app = initializeApp(config);
-export const db = getFirestore(app);
+export const db = getFirestore(app, config.databaseId);

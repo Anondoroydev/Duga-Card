@@ -187,6 +187,9 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
       alert('দয়া করে সমস্ত ঘর পূরণ করুন।');
       return;
     }
+    
+    setShareLink('');
+    setIsCreatingShortLink(true);
     triggerFlowerBlessing();
 
     const cardData: GreetingCardData = {
@@ -198,10 +201,6 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
     };
 
     onShareCard(cardData);
-
-    // Initial fallback: Indestructible link (client-side generated)
-    const directCardUrl = buildIndestructibleShareUrl(cardData);
-    setShareLink(directCardUrl);
 
     // 1. Try client-side Firestore first (most reliable for Vercel/Static)
     try {
@@ -258,6 +257,16 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
       console.error('[CardCreator] API error:', err);
     } finally {
       setIsCreatingShortLink(false);
+      
+      // ABSOLUTE FALLBACK: If after all attempts we still don't have a shareLink (meaning Firestore & API failed)
+      // then we set the long indestructible link so the user isn't stuck.
+      setShareLink(prev => {
+        if (!prev) {
+          return buildIndestructibleShareUrl(cardData);
+        }
+        return prev;
+      });
+
       // Automatically switch to 1-page preview on mobile so user sees the complete card
       setMobileView('preview');
     }
