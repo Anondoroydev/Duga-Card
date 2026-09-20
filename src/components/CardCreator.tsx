@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { DURGA_IMAGES } from '../data/durgaImages';
 import { generateBengaliFestiveWish } from '../utils/festiveWishGenerator';
+import { buildIndestructibleShareUrl } from '../utils/cardShare';
 
 interface CardCreatorProps {
   onShareCard: (card: GreetingCardData) => void;
@@ -199,35 +200,20 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
 
     onShareCard(cardData);
 
-    // Initial link
-    const params = new URLSearchParams({
-      from: cardData.from,
-      to: cardData.to,
-      msg: cardData.message,
-      theme: cardData.theme,
-      img: cardData.imageUrl || '',
-    });
-    const fallbackLink = `${window.location.origin}/?${params.toString()}`;
-    setShareLink(fallbackLink);
+    // Generate indestructible deploy-proof share URL (works 100% offline, on Vercel, Cloud Run, WhatsApp, etc.)
+    const directCardUrl = buildIndestructibleShareUrl(cardData);
+    setShareLink(directCardUrl);
 
-    // Generate clean Short URL from backend
+    // Also persist card to server backend in the background
     setIsCreatingShortLink(true);
     try {
-      const res = await fetch('/api/cards', {
+      await fetch('/api/cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData),
       });
-      const data = await res.json();
-      if (data.success) {
-        const short = data.shortUrl || `${window.location.origin}/?c=${data.id}`;
-        setShareLink(short);
-        if (data.tinyUrl) {
-          setTinyUrlLink(data.tinyUrl);
-        }
-      }
     } catch (_err) {
-      // Keep fallback query link if request fails
+      // Background persistence failure does not affect indestructible link
     } finally {
       setIsCreatingShortLink(false);
       // Automatically switch to 1-page preview on mobile so user sees the complete card
@@ -566,10 +552,10 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> শর্ট লিংক তৈরি হয়েছে!
+                  <Check className="w-3.5 h-3.5 text-emerald-400" /> কার্ড শেয়ার লিংক প্রস্তুত!
                 </span>
                 <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-medium border border-emerald-500/30">
-                  {isCreatingShortLink ? 'তৈরি হচ্ছে...' : 'Short URL'}
+                  সরাসরি লিংক
                 </span>
               </div>
               <div className="flex gap-1.5">

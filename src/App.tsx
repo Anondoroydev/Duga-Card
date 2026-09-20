@@ -13,10 +13,12 @@ import { FestiveParticles } from './components/FestiveParticles';
 import { ActiveTab, GreetingCardData } from './types';
 import { DURGA_IMAGES } from './data/durgaImages';
 import { Github, ExternalLink } from 'lucide-react';
+import { parseCardFromLocation } from './utils/cardShare';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('create');
   const [sharedCard, setSharedCard] = useState<GreetingCardData | null>(null);
+  const [isLoadingSharedCard, setIsLoadingSharedCard] = useState<boolean>(true);
   
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -28,41 +30,29 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Check URL query parameters for shared greeting card (short code or full params)
-    const params = new URLSearchParams(window.location.search);
-    const shortCode = params.get('c');
-    const from = params.get('from');
-    const to = params.get('to');
-    const msg = params.get('msg');
-    const theme = params.get('theme');
-    const img = params.get('img');
+    // Check URL parameters for shared greeting card (?card, ?c, or ?from/to/msg)
+    let isMounted = true;
 
-    if (shortCode) {
-      fetch(`/api/cards/${shortCode}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.card) {
-            setSharedCard({
-              from: data.card.from,
-              to: data.card.to,
-              message: data.card.message,
-              theme: data.card.theme || 'royal-maroon',
-              imageUrl: data.card.imageUrl || undefined,
-            });
-          }
-        })
-        .catch(() => {
-          // Keep default if short card fetch fails
-        });
-    } else if (from && to && msg) {
-      setSharedCard({
-        from: decodeURIComponent(from),
-        to: decodeURIComponent(to),
-        message: decodeURIComponent(msg),
-        theme: (theme as any) || 'royal-maroon',
-        imageUrl: img ? decodeURIComponent(img) : undefined,
-      });
+    async function loadCard() {
+      try {
+        const card = await parseCardFromLocation();
+        if (isMounted && card) {
+          setSharedCard(card);
+        }
+      } catch (err) {
+        console.error('Failed to parse card from URL:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingSharedCard(false);
+        }
+      }
     }
+
+    loadCard();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleShareCard = (card: GreetingCardData) => {
@@ -131,6 +121,11 @@ export default function App() {
               onReset={handleResetShare}
               onPostToWall={handlePostToWallViaShared}
             />
+          ) : (isLoadingSharedCard && typeof window !== 'undefined' && (window.location.search.includes('card=') || window.location.search.includes('c=') || window.location.search.includes('from='))) ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
+              <div className="text-4xl animate-bounce">🪔</div>
+              <p className="text-amber-300 font-serif text-base animate-pulse">শারদীয় শুভেচ্ছা কার্ডটি খোলা হচ্ছে...</p>
+            </div>
           ) : (
             <>
               {activeTab === 'create' && <CardCreator onShareCard={handleShareCard} />}

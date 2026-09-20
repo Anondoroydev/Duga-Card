@@ -1,10 +1,24 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
 const app = express();
 const PORT = 3000;
+
+// Path for persistent card storage
+const CARDS_FILE_PATH = path.join(process.cwd(), "data", "cards.json");
+
+// Ensure data folder exists
+try {
+  const dataDir = path.join(process.cwd(), "data");
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+} catch (_e) {
+  // Ignore
+}
 
 app.use(express.json());
 
@@ -139,7 +153,7 @@ app.post("/api/wishes", (req, res) => {
   res.json({ success: true, wish: newWish });
 });
 
-// In-memory persistent store for shortened greeting cards
+// In-memory persistent store for shortened greeting cards with disk backup
 interface StoredCard {
   id: string;
   from: string;
@@ -152,16 +166,50 @@ interface StoredCard {
 
 const shortCards = new Map<string, StoredCard>();
 
-// Seed a sample greeting card
-shortCards.set("durga26", {
-  id: "durga26",
-  from: "অজয় সরকার",
-  to: "সকল ভক্তবৃন্দ",
-  message: "শুভ শারদীয়া ২০২৬! মা দুর্গার আশীর্বাদে আপনার জীবন অনাবিল আনন্দ ও সুখ-শান্তিতে ভরে উঠুক।",
-  theme: "royal-maroon",
-  imageUrl: "/src/assets/images/maa_durga_art_1789832835405.jpg",
-  createdAt: new Date().toISOString(),
-});
+// Load previously saved cards from disk on startup
+function loadCardsFromDisk() {
+  try {
+    if (fs.existsSync(CARDS_FILE_PATH)) {
+      const content = fs.readFileSync(CARDS_FILE_PATH, "utf-8");
+      const list: StoredCard[] = JSON.parse(content);
+      if (Array.isArray(list)) {
+        for (const card of list) {
+          if (card && card.id) {
+            shortCards.set(card.id, card);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load cards from disk:", err);
+  }
+}
+
+function saveCardsToDisk() {
+  try {
+    const list = Array.from(shortCards.values());
+    fs.writeFileSync(CARDS_FILE_PATH, JSON.stringify(list, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to save cards to disk:", err);
+  }
+}
+
+loadCardsFromDisk();
+
+// Seed a sample greeting card if empty
+if (!shortCards.has("durga26")) {
+  const seedCard: StoredCard = {
+    id: "durga26",
+    from: "অজয় সরকার",
+    to: "সকল ভক্তবৃন্দ",
+    message: "শুভ শারদীয়া ২০২৬! মা দুর্গার আশীর্বাদে আপনার জীবন অনাবিল আনন্দ ও সুখ-শান্তিতে ভরে উঠুক।",
+    theme: "royal-maroon",
+    imageUrl: "/slide1.jpg",
+    createdAt: new Date().toISOString(),
+  };
+  shortCards.set("durga26", seedCard);
+  saveCardsToDisk();
+}
 
 // API: Create short card link
 app.post("/api/cards", async (req, res) => {
@@ -189,27 +237,18 @@ app.post("/api/cards", async (req, res) => {
     };
 
     shortCards.set(id, card);
+    saveCardsToDisk();
 
-    const origin = req.headers.origin || `${req.protocol}://${req.get("host")}`;
-    const directShortUrl = `${origin}/?c=${id}`;
-
-    let tinyUrl = "";
-    try {
-      const tinyRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(directShortUrl)}`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      if (tinyRes.ok) {
-        tinyUrl = (await tinyRes.text()).trim();
-      }
-    } catch (_e) {
-      // Non-blocking fallback
-    }
+    // Determine correct public origin (respect reverse proxy headers)
+    const host = req.get("x-forwarded-host") || req.get("host") || "localhost:3000";
+    const proto = req.get("x-forwarded-proto") || req.protocol || "https";
+    const publicOrigin = req.headers.origin || `${proto}://${host}`;
+    const directShortUrl = `${publicOrigin}/?c=${id}`;
 
     res.json({
       success: true,
       id,
       shortUrl: directShortUrl,
-      tinyUrl: tinyUrl || directShortUrl,
       card,
     });
   } catch (err: any) {
@@ -217,9 +256,40 @@ app.post("/api/cards", async (req, res) => {
   }
 });
 
-// API: Get card by ID
+// API: Get card by ID (supports short ID, disk lookup, or direct base64 encoded token)
 app.get("/api/cards/:id", (req, res) => {
-  const card = shortCards.get(req.params.id);
+  const paramId = req.params.id;
+  let card = shortCards.get(paramId);
+
+  // If not in memory, re-read disk
+  if (!card && fs.existsSync(CARDS_FILE_PATH)) {
+    loadCardsFromDisk();
+    card = shortCards.get(paramId);
+  }
+
+  // If still not found, check if the ID itself is a base64url encoded card
+  if (!card && paramId.length > 20) {
+    try {
+      let clean = paramId.trim().replace(/-/g, '+').replace(/_/g, '/');
+      while (clean.length % 4 !== 0) clean += '=';
+      const jsonStr = Buffer.from(clean, 'base64').toString('utf-8');
+      const parsed = JSON.parse(jsonStr);
+      if (parsed && (parsed.f || parsed.from || parsed.m || parsed.message)) {
+        card = {
+          id: paramId,
+          from: parsed.f || parsed.from || '',
+          to: parsed.t || parsed.to || '',
+          message: parsed.m || parsed.message || '',
+          theme: parsed.th || parsed.theme || 'royal-maroon',
+          imageUrl: parsed.i || parsed.imageUrl || '',
+          createdAt: new Date().toISOString(),
+        };
+      }
+    } catch (_e) {
+      // Not a valid base64 token
+    }
+  }
+
   if (!card) {
     return res.status(404).json({ error: "Card not found" });
   }
