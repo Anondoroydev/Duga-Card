@@ -89,7 +89,11 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
 export function buildIndestructibleShareUrl(card: GreetingCardData): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const base = `${origin}${pathname}`.replace(/\/+$/, '') || origin;
+  
+  // Create base URL without trailing slash, but ensure origin is clean
+  const cleanOrigin = origin.replace(/\/+$/, '');
+  const cleanPath = pathname.replace(/\/+$/, '');
+  const base = `${cleanOrigin}${cleanPath || ''}`;
   
   const encodedCard = encodeCardToParam(card);
   const params = new URLSearchParams();
@@ -107,6 +111,7 @@ export function buildIndestructibleShareUrl(card: GreetingCardData): string {
     params.set('img', card.imageUrl);
   }
 
+  // Ensure precisely one slash between base and query params
   return `${base}/?${params.toString()}`;
 }
 
@@ -145,7 +150,10 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
 
   // Helper to get from either search or hash
   const getParam = (key: string): string | null => {
-    return searchParams.get(key) || hashParams.get(key);
+    const val = searchParams.get(key) || hashParams.get(key);
+    if (!val) return null;
+    // Strip quotes if any (some redirectors might add them)
+    return val.replace(/^["']|["']$/g, "").trim();
   };
 
   // 2. Try the self-contained 'card' parameter first (0ms, 100% offline & deploy-proof)
