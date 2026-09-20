@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquareHeart, Sparkles, Send, RefreshCw, Heart, User } from 'lucide-react';
+import { MessageSquareHeart, Send, RefreshCw, Heart, User } from 'lucide-react';
 import { CommunityWish } from '../types';
 import { playDhaakBeat } from '../utils/audio';
 import { motion } from 'motion/react';
@@ -15,14 +15,29 @@ export const WishesWall: React.FC = () => {
   const fetchWishes = async () => {
     try {
       const res = await fetch('/api/wishes');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setWishes(data);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setWishes(data);
+          return;
+        }
       }
-    } catch (err) {
-      console.error('Failed to fetch wishes', err);
+    } catch (_err) {
+      // Ignore network errors and check local storage
     } finally {
       setLoading(false);
+    }
+
+    try {
+      const stored = localStorage.getItem('local_durga_wishes');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWishes(parsed);
+        }
+      }
+    } catch (_e) {
+      // LocalStorage access safe
     }
   };
 
@@ -43,16 +58,34 @@ export const WishesWall: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender, message, theme: 'royal-maroon' }),
       });
-      const data = await res.json();
-      if (data.success && data.wish) {
-        setWishes([data.wish, ...wishes]);
-        setSender('');
-        setMessage('');
-      } else {
-        setError(data.error || 'Failed to post wish');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.wish) {
+          setWishes((prev) => [data.wish, ...prev]);
+          setSender('');
+          setMessage('');
+          return;
+        }
       }
-    } catch (err) {
-      setError('সার্ভারের সাথে সংযোগ স্থাপন করতে সমস্যা হচ্ছে।');
+      throw new Error('Server unavailable');
+    } catch (_err) {
+      // Local fallback so user can still post wishes seamlessly even if server is offline or static
+      const localWish = {
+        id: Date.now().toString(),
+        sender: sender.trim(),
+        message: message.trim(),
+        theme: 'royal-maroon',
+        createdAt: new Date().toISOString(),
+      };
+      setWishes((prev) => {
+        const updated = [localWish, ...prev];
+        try {
+          localStorage.setItem('local_durga_wishes', JSON.stringify(updated.slice(0, 50)));
+        } catch (_e) {}
+        return updated;
+      });
+      setSender('');
+      setMessage('');
     } finally {
       setSubmitting(false);
     }
@@ -84,7 +117,7 @@ export const WishesWall: React.FC = () => {
         <div className="lg:col-span-5">
           <div className="bg-stone-950/20 hover:bg-stone-950/25 backdrop-blur-md border border-amber-400/35 rounded-3xl p-6 shadow-xl sticky top-24 text-amber-100 transition-all">
             <h3 className="text-lg font-bold font-serif text-amber-300 mb-4 flex items-center gap-2 border-b border-amber-400/20 pb-3">
-              <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" /> নতুন শুভেচ্ছা লিখুন
+              নতুন শুভেচ্ছা লিখুন
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">

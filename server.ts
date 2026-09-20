@@ -37,59 +37,70 @@ app.post("/api/generate-wish", async (req, res) => {
   try {
     const { sender, recipient, relationship, mood } = req.body;
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "Gemini API key not configured on server." });
-    }
+    const rawApiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
+    const apiKey = rawApiKey.replace(/^["']|["']$/g, "").trim();
+    let generatedText = "";
 
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
+    if (apiKey) {
+      try {
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build',
+            },
+          },
+        });
 
-    const prompt = `Write a warm, festive, and heartfelt Durga Puja greeting message in Bengali (with optional English translation or mixed friendly tone if appropriate, but primarily in lyrical Bengali) from "${sender || 'A friend'}" to "${recipient || 'Friend'}".
+        const prompt = `Write a warm, festive, and heartfelt Durga Puja greeting message in Bengali (with optional English translation or mixed friendly tone if appropriate, but primarily in lyrical Bengali) from "${sender || 'A friend'}" to "${recipient || 'Friend'}".
 Relationship: ${relationship || 'friend'}
 Tone/Mood: ${mood || 'joyful and traditional'}
 Keep it between 2 to 4 sentences, touching upon Maa Durga, Pujo vibes, dhak, and happiness. Do not include quotes around the output, just the message text.`;
 
-    // Prioritize high-capacity, low-latency models to prevent 503 spikes
-    const candidateModels = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.8-flash", "gemini-3.6-flash"];
-    let generatedText = "";
+        // Prioritize high-capacity, low-latency models to prevent 503 spikes
+        const candidateModels = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
 
-    for (const model of candidateModels) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: prompt,
-        });
-        if (response.text && response.text.trim()) {
-          generatedText = response.text.trim();
-          break;
+        for (const model of candidateModels) {
+          try {
+            const response = await ai.models.generateContent({
+              model,
+              contents: prompt,
+            });
+            if (response.text && response.text.trim()) {
+              generatedText = response.text.trim();
+              break;
+            }
+          } catch (_err) {
+            // Silently proceed to next candidate model
+          }
         }
-      } catch (_err) {
-        // Silently proceed to next candidate model without polluting logs
+      } catch (_initErr) {
+        // Fallback to festive generator
       }
     }
 
-    // Graceful festive fallback if all API endpoints encounter temporary high demand
+    // Graceful festive fallback if key missing or temporary high demand
     if (!generatedText) {
       const fromName = sender?.trim() || "আপনার শুভাকাঙ্ক্ষী";
       const toName = recipient?.trim() || "প্রিয় সুহৃদ";
-      const fallbacks = [
-        `প্রিয় ${toName}, আপনাকে ও আপনার পরিবারকে জানাই শারদীয়ার আন্তরিক প্রীতি ও শুভেচ্ছা। মা দুর্গার আশীর্বাদে জীবন ভরে উঠুক অপার আনন্দ ও সাফল্যে। শুভ দুর্গোৎসব! — ${fromName}`,
-        `${toName}, ঢাকের বাদ্যি আর কাশফুলের দোলায় শারদ উৎসবের শুভলগ্নে জানাই অফুরন্ত শুভেচ্ছা ও ভালোবাসা। পুজোর প্রতিটি দিন আনন্দময় হোক। শুভ শারদীয়া! — ${fromName}`,
-        `শুভ শারদীয়া, ${toName}! দেবী দুর্গার ঐশ্বরিক কৃপায় আপনার জীবনের সব বাধা দূর হোক এবং সুখ-শান্তি বজায় থাকুক। ইতি, ${fromName}`
-      ];
-      generatedText = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      const rel = (relationship || "friend").toLowerCase();
+
+      if (rel.includes("love") || rel.includes("ভালোবাসা")) {
+        generatedText = `প্রিয় ${toName}, শারদীয়ার আলোর রোশনাইয়ে তোমাকে জানাই হৃদয়ের গভীরতম ভালোবাসা। কাশফুলের শুভ্রতা আর অষ্টমীর পবিত্র অঞ্জলির মতো আমাদের বন্ধন চিরন্তন হোক। মা দুর্গা তোমার জীবন অনাবিল আনন্দে ভরিয়ে তুলুন। শুভ শারদীয়া! — ${fromName}`;
+      } else if (rel.includes("family") || rel.includes("পরিবার") || rel.includes("elder") || rel.includes("গুরুজন")) {
+        generatedText = `শ্রদ্ধেয় ${toName}, শারদ উৎসবের পুণ্যলগ্নে জানাই সশ্রদ্ধ প্রণাম ও আন্তরিক শুভেচ্ছা। মা দুর্গার স্বর্গীয় আশীর্বাদে আপনার ও সমগ্র পরিবারের দিনগুলি সুখ, সুস্বাস্থ্য ও পরম শান্তিতে ভরে উঠুক। শুভ দুর্গোৎসব! — ${fromName}`;
+      } else {
+        const fallbacks = [
+          `প্রিয় ${toName}, আপনাকে ও আপনার পরিবারকে জানাই শারদীয়ার আন্তরিক প্রীতি ও শুভেচ্ছা। মা দুর্গার আশীর্বাদে জীবন ভরে উঠুক অপার আনন্দ ও সাফল্যে। শুভ দুর্গোৎসব! — ${fromName}`,
+          `${toName}, ঢাকের বাদ্যি আর কাশফুলের দোলায় শারদ উৎসবের শুভলগ্নে জানাই অফুরন্ত শুভেচ্ছা ও ভালোবাসা। পুজোর প্রতিটি দিন আনন্দময় হোক। শুভ শারদীয়া! — ${fromName}`,
+          `শুভ শারদীয়া, ${toName}! দেবী দুর্গার ঐশ্বরিক কৃপায় আপনার জীবনের সব বাধা দূর হোক এবং সুখ-শান্তি বজায় থাকুক। ইতি, ${fromName}`
+        ];
+        generatedText = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      }
     }
 
     res.json({ success: true, message: generatedText });
   } catch (error: any) {
-    // Return gracefully formatted festive wish even in catastrophic unexpected failure
     const fromName = req.body?.sender?.trim() || "শুভেচ্ছান্তে";
     const toName = req.body?.recipient?.trim() || "প্রিয়";
     res.json({

@@ -15,8 +15,8 @@ export const FestiveParticles: React.FC = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
-    // Elegant warm festive symbols: Diyas and gentle golden sparks
-    const symbols = ['🪔', '✨', '🌟', '🔥', '🪔'];
+    // Elegant warm festive symbols: Diyas, Flowers and Flames
+    const symbols = ['🪔', '🌸', '🪔', '🔥', '🪔'];
     const newParticles: Particle[] = Array.from({ length: 20 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,

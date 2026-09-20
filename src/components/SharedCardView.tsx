@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Heart, Volume2, RotateCcw, Send, MessageSquareHeart, Mail, Bell } from 'lucide-react';
+import { Heart, Volume2, RotateCcw, Send, MessageSquareHeart, Mail, Bell } from 'lucide-react';
 import { playDhaakSound, playShankhoSound, playDhaakBeat } from '../utils/audio';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -201,7 +201,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
         {/* Top bar with back to home option */}
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-amber-300/80 font-serif flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> শারদীয় শুভেচ্ছা কার্ড
+            শারদীয় শুভেচ্ছা কার্ড
           </span>
           <button
             id="shared-header-back-btn"
@@ -295,7 +295,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                     transition={{ duration: 0.6 }}
                     className="absolute text-5xl pointer-events-none"
                   >
-                    📜📄🪶✨
+                    📜📄🪶🌸
                   </motion.div>
                 </div>
               )}
@@ -348,7 +348,6 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
               disabled={isOpening}
               className="w-full bg-gradient-to-r from-amber-300 via-orange-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-base flex items-center justify-center gap-2 shadow-xl shadow-red-950/60 transition-all transform hover:scale-105 active:scale-95 border-2 border-amber-200 disabled:opacity-80"
             >
-              <Sparkles className={`w-5 h-5 text-red-950 ${isOpening ? 'animate-spin' : ''}`} />
               {isOpening ? 'চিঠি খোলা হচ্ছে... 🌸' : 'চিঠি খুলুন ✉️'}
             </button>
           </motion.div>
@@ -357,7 +356,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
           <>
             <div className="text-center space-y-2">
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-sm backdrop-blur-sm">
-                <Sparkles className="w-3.5 h-3.5" /> শারদীয়ার বিশেষ শুভেচ্ছা কার্ড
+                শারদীয়ার বিশেষ শুভেচ্ছা কার্ড
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold font-serif text-amber-200 tracking-wide drop-shadow-md">
                 শুভ শারদীয়া ২০২৬!
@@ -384,8 +383,8 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                 {/* Card Top */}
                 <div className="flex items-center justify-between border-b border-amber-500/30 pb-3 mb-2.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-amber-500/25 flex items-center justify-center border border-amber-400/50 shadow-sm">
-                      <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                    <div className="w-8 h-8 rounded-full bg-amber-500/25 flex items-center justify-center border border-amber-400/50 shadow-sm text-sm">
+                      🪔
                     </div>
                     <span className="font-serif font-bold text-amber-200 text-sm tracking-wide">
                       দুর্গাপূজা শুভেচ্ছা ২০২৬
@@ -397,7 +396,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                       title="পুষ্পাঞ্জলি দিন"
                       className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-2.5 py-1 rounded-full text-xs font-medium border border-amber-400/40 transition-all backdrop-blur-sm"
                     >
-                      <Sparkles className="w-3 h-3 text-amber-400" /> পুষ্পাঞ্জলি
+                      🌸 পুষ্পাঞ্জলি
                     </button>
                     <button
                       onClick={playDhaakSound}

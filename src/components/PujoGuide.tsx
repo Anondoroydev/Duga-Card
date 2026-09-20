@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Calendar, Sparkles, MapPin, Music, Flame } from 'lucide-react';
+import { Clock, Calendar, MapPin, Music, Flame } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const PujoGuide: React.FC = () => {
@@ -94,7 +94,7 @@ export const PujoGuide: React.FC = () => {
         <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
 
         <h3 className="text-xl font-serif font-bold text-amber-200 mb-6 flex items-center justify-center gap-2">
-          <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" /> মহাষষ্ঠী পর্যন্ত বাকি সময়
+          🌸 মহাষষ্ঠী পর্যন্ত বাকি সময়
         </h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto relative z-10">
@@ -132,7 +132,7 @@ export const PujoGuide: React.FC = () => {
             <Calendar className="w-5 h-5 text-amber-400" /> দুর্গোৎসব ২০২৬ এর দিনপঞ্জি
           </h3>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-400/40 w-fit shadow-sm">
-            ✨ সপ্তমী তিথি বিস্তার: ২ দিনব্যাপী পূজা (১ম ও ২য় দিন)
+            🌸 সপ্তমী তিথি বিস্তার: ২ দিনব্যাপী পূজা (১ম ও ২য় দিন)
           </span>
         </div>
 

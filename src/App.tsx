@@ -12,7 +12,7 @@ import { PujoGuide } from './components/PujoGuide';
 import { FestiveParticles } from './components/FestiveParticles';
 import { ActiveTab, GreetingCardData } from './types';
 import { DURGA_IMAGES } from './data/durgaImages';
-import { Sparkles, Github, ExternalLink } from 'lucide-react';
+import { Github, ExternalLink } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('create');
