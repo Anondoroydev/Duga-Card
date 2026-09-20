@@ -74,13 +74,18 @@ export function decodeCardFromParam(param: string): GreetingCardData | null {
       };
     }
 
-    return {
+    if (!data || (typeof data !== 'object')) return null;
+
+    const card = {
       from: data.f || data.from || '',
       to: data.t || data.to || '',
       message: data.m || data.message || '',
       theme: (data.th || data.theme || 'royal-maroon') as any,
       imageUrl: data.i || data.imageUrl || undefined,
     };
+
+    if (!card.from || !card.to) return null;
+    return card;
   } catch (err) {
     return decodeBase64Fallback(param);
   }
@@ -105,13 +110,20 @@ function decodeBase64Fallback(param: string): GreetingCardData | null {
     const json = new TextDecoder().decode(bytes);
     const data = JSON.parse(json);
     
-    return {
+    if (!data || (typeof data !== 'object')) return null;
+
+    const card = {
       from: data.f || data.from || '',
       to: data.t || data.to || '',
       message: data.m || data.message || '',
       theme: (data.th || data.theme || 'royal-maroon') as any,
       imageUrl: data.i || data.imageUrl || undefined,
     };
+
+    // Strict validation: Must have at least from and to to be a valid card
+    if (!card.from || !card.to) return null;
+    
+    return card;
   } catch (e) {
     return null;
   }
@@ -161,6 +173,8 @@ export function safeUriDecode(val: string | null | undefined): string {
 export async function parseCardFromLocation(): Promise<GreetingCardData | null> {
   if (typeof window === 'undefined') return null;
 
+  console.log('[CardShare] Parsing location:', window.location.href);
+
   // 1. Gather all URLSearchParams from both search (?...) and hash (#...)
   const fullUrl = window.location.href;
   const searchParams = new URLSearchParams(window.location.search);
@@ -185,7 +199,7 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
 
   // Helper to get from either search, manual regex, or hash
   const getParam = (key: string): string | null => {
-    const val = searchParams.get(key) || getManually(key) || hashParams.get(key);
+    const val = searchParams.get(key) || searchParams.get(key.toUpperCase()) || getManually(key) || hashParams.get(key);
     if (!val) return null;
     // Strip quotes if any (some redirectors might add them)
     return val.replace(/^["']|["']$/g, "").trim();
@@ -194,6 +208,7 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
   // 2. Try the self-contained 'card' parameter first
   const cardParam = getParam('card');
   if (cardParam) {
+    console.log('[CardShare] Found card param, decoding...');
     const decoded = decodeCardFromParam(cardParam);
     if (decoded) return decoded;
   }
@@ -201,14 +216,19 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
   // 3. Try the 'c' parameter (could be short code or base64 token)
   const cParam = getParam('c');
   if (cParam) {
+    console.log('[CardShare] Found c param:', cParam);
     // Check if 'c' is directly a base64 encoded card
     const directDecode = decodeCardFromParam(cParam);
-    if (directDecode) return directDecode;
+    if (directDecode) {
+      console.log('[CardShare] c param is base64 card');
+      return directDecode;
+    }
 
     // Try fetching from backend API if available
     try {
+      console.log('[CardShare] Fetching card from API:', cParam);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const timeoutId = setTimeout(() => controller.abort(), 7500); // Increased timeout for cold starts
       const res = await fetch(`/api/cards/${encodeURIComponent(cParam)}`, {
         signal: controller.signal,
       });
@@ -217,6 +237,7 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
       if (res.ok) {
         const data = await res.json();
         if (data && data.success && data.card) {
+          console.log('[CardShare] API Fetch Success');
           return {
             from: data.card.from || '',
             to: data.card.to || '',
@@ -225,9 +246,11 @@ export async function parseCardFromLocation(): Promise<GreetingCardData | null> 
             imageUrl: data.card.imageUrl || undefined,
           };
         }
+      } else {
+        console.warn('[CardShare] API Fetch Failed:', res.status);
       }
-    } catch (_err) {
-      // Backend fetch failed or timed out
+    } catch (err) {
+      console.error('[CardShare] API Fetch Error:', err);
     }
   }
 

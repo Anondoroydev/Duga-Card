@@ -18,7 +18,18 @@ if (!getApps().length) {
   });
 }
 
-const db = getFirestore(firebaseConfig.firestoreDatabaseId || '(default)');
+let db: FirebaseFirestore.Firestore;
+try {
+  console.log(`[Firebase] Initializing with project: ${firebaseConfig.projectId}`);
+  const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
+  console.log(`[Firebase] Using database ID: ${dbId}`);
+  db = getFirestore(dbId);
+  console.log(`[Firebase] Firestore initialized successfully`);
+} catch (err) {
+  console.error(`[Firebase] Initialization ERROR:`, err);
+  // Fallback to default
+  db = getFirestore();
+}
 
 app.use(express.json());
 
@@ -200,20 +211,25 @@ app.post("/api/cards", async (req, res) => {
 
 // API: Get specific card details from Firestore
 app.get("/api/cards/:id", async (req, res) => {
+  const { id } = req.params;
+  console.log(`[API] Fetching card with ID: ${id}`);
   try {
-    const { id } = req.params;
     const doc = await db.collection('cards').doc(id).get();
     
     if (!doc.exists) {
+      console.log(`[API] Card NOT FOUND in Firestore: ${id}`);
       return res.status(404).json({ error: "Card not found" });
     }
 
+    const cardData = doc.data();
+    console.log(`[API] Card FOUND:`, cardData);
+
     res.json({
       success: true,
-      card: doc.data(),
+      card: cardData,
     });
   } catch (error) {
-    console.error("Failed to fetch card from Firestore:", error);
+    console.error(`[API] Firestore ERROR for ID ${id}:`, error);
     res.status(500).json({ error: "Failed to fetch card details" });
   }
 });
@@ -232,7 +248,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
+    app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

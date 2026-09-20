@@ -213,9 +213,11 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success && data.shortUrl) {
-          // Replace share link with the nice short one from Firestore
-          setShareLink(data.shortUrl);
+        if (data.success && data.id) {
+          // Build the short URL using the reliable local origin
+          const baseUrl = window.location.origin + window.location.pathname;
+          const shortUrl = `${baseUrl}?c=${data.id}`;
+          setShareLink(shortUrl);
         }
       }
     } catch (_err) {
