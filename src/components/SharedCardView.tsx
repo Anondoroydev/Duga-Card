@@ -44,80 +44,72 @@ const THEMES: Record<string, { bg: string; cardBg: string; badge: string }> = {
   }
 };
 
-/* Pure Flying Doves Component (Always on screen: extra large, never clipped, continuous tugging during 10s opening) */
+/* Pure Flying Doves Component (Always visible on PC & Mobile, smooth graceful motion) */
 const LovelyBirdsScene: React.FC<{ phase: string }> = ({ phase }) => {
   return (
     <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
-      {/* Left Bird - Always on screen at top-left, pulls envelope flap during opening */}
+      {/* Left Bird - Always visible at top-left corner without clipping on PC */}
       <motion.div
-        initial={{ left: '-2%', top: '-85px', rotate: -6 }}
+        initial={{ left: '0%', top: '-45px', rotate: -4 }}
         animate={
           phase === 'closed' || phase === 'opened'
-            ? { left: '-2%', top: '-85px', y: [0, -12, 0], rotate: [-6, -2, -6] }
+            ? { left: '0%', top: '-45px', y: [0, -10, 0], rotate: [-4, 2, -4] }
             : phase === 'quarrel'
             ? {
-                left: ['-2%', '24%', '12%', '-2%'], // Flies toward center flap, grabs it, pulls left!
-                top: ['-85px', '-15px', '-10px', '-65px'],
-                rotate: [-15, 12, -15, -20]
+                left: ['0%', '22%', '10%', '0%'],
+                top: ['-45px', '5px', '0px', '-35px'],
+                rotate: [-8, 10, -8, -12]
               }
-            : { left: '-2%', top: '-85px', y: [0, -8, 0], rotate: -6 }
+            : { left: '0%', top: '-45px', y: [0, -8, 0], rotate: -4 }
         }
         transition={
           phase === 'quarrel'
-            ? { repeat: Infinity, duration: 1.6, ease: "easeInOut" }
-            : { repeat: Infinity, duration: 3.2, ease: "easeInOut" }
+            ? { duration: 2.0, ease: "easeInOut" }
+            : { repeat: Infinity, duration: 3.5, ease: "easeInOut" }
         }
-        className="absolute filter drop-shadow-[0_14px_28px_rgba(0,0,0,0.9)]"
+        className="absolute filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)]"
       >
-        <div className="w-44 h-44 sm:w-60 sm:h-60 flex items-center justify-center">
+        <div className="w-32 h-32 sm:w-48 sm:h-48 flex items-center justify-center">
           <motion.img
             src={animatedBirdGif}
             alt="Pixabay Animated Flying Bird GIF"
             referrerPolicy="no-referrer"
-            animate={
-              phase === 'quarrel'
-                ? { scaleY: [1, 0.85, 1.1, 0.85, 1], rotate: [0, -6, 6, 0] }
-                : { scaleY: [1, 0.9, 1] }
-            }
-            transition={{ repeat: Infinity, duration: phase === 'quarrel' ? 0.3 : 1.4 }}
-            className="w-full h-full object-contain filter drop-shadow-[0_8px_20px_rgba(255,255,255,0.9)]"
+            animate={{ scaleY: [1, 0.92, 1] }}
+            transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+            className="w-full h-full object-contain filter drop-shadow-[0_6px_16px_rgba(255,255,255,0.85)]"
           />
         </div>
       </motion.div>
 
-      {/* Right Bird - Always on screen at top-right, pulls envelope flap during opening */}
+      {/* Right Bird - Always visible at top-right corner without clipping on PC */}
       <motion.div
-        initial={{ right: '-2%', top: '-85px', rotate: 6 }}
+        initial={{ right: '0%', top: '-45px', rotate: 4 }}
         animate={
           phase === 'closed' || phase === 'opened'
-            ? { right: '-2%', top: '-85px', y: [0, -12, 0], rotate: [6, 2, 6] }
+            ? { right: '0%', top: '-45px', y: [0, -10, 0], rotate: [4, -2, 4] }
             : phase === 'quarrel'
             ? {
-                right: ['-2%', '24%', '12%', '-2%'], // Flies toward center flap, grabs it, pulls right!
-                top: ['-85px', '-15px', '-10px', '-65px'],
-                rotate: [15, -12, 15, 20]
+                right: ['0%', '22%', '10%', '0%'],
+                top: ['-45px', '5px', '0px', '-35px'],
+                rotate: [8, -10, 8, 12]
               }
-            : { right: '-2%', top: '-85px', y: [0, -8, 0], rotate: 6 }
+            : { right: '0%', top: '-45px', y: [0, -8, 0], rotate: 4 }
         }
         transition={
           phase === 'quarrel'
-            ? { repeat: Infinity, duration: 1.6, ease: "easeInOut", delay: 0.1 }
-            : { repeat: Infinity, duration: 3.2, ease: "easeInOut", delay: 0.3 }
+            ? { duration: 2.0, ease: "easeInOut", delay: 0.1 }
+            : { repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 0.3 }
         }
-        className="absolute filter drop-shadow-[0_14px_28px_rgba(0,0,0,0.9)]"
+        className="absolute filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)]"
       >
-        <div className="w-44 h-44 sm:w-60 sm:h-60 flex items-center justify-center">
+        <div className="w-32 h-32 sm:w-48 sm:h-48 flex items-center justify-center">
           <motion.img
             src={animatedBirdGif}
             alt="Pixabay Animated Flying Bird GIF"
             referrerPolicy="no-referrer"
-            animate={
-              phase === 'quarrel'
-                ? { scaleY: [1, 0.85, 1.1, 0.85, 1], rotate: [0, 6, -6, 0] }
-                : { scaleY: [1, 0.9, 1] }
-            }
-            transition={{ repeat: Infinity, duration: phase === 'quarrel' ? 0.3 : 1.4 }}
-            className="w-full h-full object-contain -scale-x-100 filter drop-shadow-[0_8px_20px_rgba(255,255,255,0.9)]"
+            animate={{ scaleY: [1, 0.92, 1] }}
+            transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+            className="w-full h-full object-contain -scale-x-100 filter drop-shadow-[0_6px_16px_rgba(255,255,255,0.85)]"
           />
         </div>
       </motion.div>
@@ -129,7 +121,6 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
   const [isOpened, setIsOpened] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [openingPhase, setOpeningPhase] = useState<'closed' | 'quarrel' | 'ripping' | 'burst'>('closed');
-  const [countdown, setCountdown] = useState(20);
   const [replyMessage, setReplyMessage] = useState('');
   const [replySender, setReplySender] = useState('');
   const [replied, setReplied] = useState(false);
@@ -165,48 +156,30 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
     }, 280);
   };
 
-  const executeRippingAndOpen = () => {
-    setOpeningPhase('ripping');
-    playDhaakBeat();
-    triggerFlowerBlessing();
-
-    setTimeout(() => {
-      setOpeningPhase('burst');
-    }, 800);
-
-    setTimeout(() => {
-      setIsOpened(true);
-      setIsOpening(false);
-      setOpeningPhase('closed');
-    }, 1800);
-  };
-
   const handleOpenCard = () => {
     if (isOpening || isOpened) return;
     setIsOpening(true);
     setOpeningPhase('quarrel');
-    setCountdown(10);
     playShankhoSound();
 
-    let currentSec = 10;
-    const intervalId = setInterval(() => {
-      currentSec -= 1;
-      setCountdown(currentSec);
+    // Doves fly towards center flap and pull apart gracefully
+    setTimeout(() => {
+      setOpeningPhase('ripping');
+      playDhaakBeat();
+      triggerFlowerBlessing();
+    }, 2000);
 
-      if (currentSec % 3 === 0 && currentSec > 0) {
-        playDhaakBeat();
-      }
+    // Flap tears open with festive burst
+    setTimeout(() => {
+      setOpeningPhase('burst');
+    }, 2800);
 
-      if (currentSec <= 0) {
-        clearInterval(intervalId);
-        executeRippingAndOpen();
-      }
-    }, 1000);
-  };
-
-  const handleSkipCountdown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    executeRippingAndOpen();
+    // Reveal full card
+    setTimeout(() => {
+      setIsOpened(true);
+      setIsOpening(false);
+      setOpeningPhase('closed');
+    }, 3600);
   };
 
   const handleSendReply = (e: React.FormEvent) => {
@@ -245,7 +218,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="bg-gradient-to-br from-red-900/60 via-amber-900/50 to-red-950/70 backdrop-blur-md border-2 border-amber-300/80 rounded-3xl p-5 sm:p-9 shadow-2xl text-center space-y-5 relative overflow-visible ring-4 ring-amber-400/30 group cursor-pointer"
+            className="bg-gradient-to-br from-red-950/20 via-amber-950/15 to-red-950/25 backdrop-blur-md border-2 border-amber-300/80 rounded-3xl p-5 sm:p-9 shadow-2xl text-center space-y-5 relative overflow-visible ring-4 ring-amber-400/30 group cursor-pointer"
             style={{ perspective: '1200px' }}
             onClick={handleOpenCard}
           >
@@ -263,10 +236,10 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                     : { x: 0, rotate: 0, opacity: 1, scale: 1 }
                 }
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-br from-red-700 via-red-800 to-amber-800 border-2 border-r-0 border-amber-300 rounded-l-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-end"
+                className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-br from-red-900/85 via-red-950/80 to-amber-900/85 backdrop-blur-md border-2 border-r-0 border-amber-300/90 rounded-l-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-end"
               >
                 {/* White inner paper tear fibers texture */}
-                <div className="absolute right-0 top-0 bottom-0 w-2 bg-amber-100 shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                <div className="absolute right-0 top-0 bottom-0 w-2 bg-amber-100/90 shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
                 <svg viewBox="0 0 24 200" preserveAspectRatio="none" className="h-full w-6 text-amber-100 fill-amber-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.8)] z-10">
                   <polygon points="0,0 24,12 8,25 24,40 6,55 24,70 8,85 24,100 5,115 24,130 8,145 24,160 5,175 24,200 0,200" />
                 </svg>
@@ -280,7 +253,7 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
                     : { x: 0, rotate: 0, opacity: 1, scale: 1 }
                 }
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-bl from-red-700 via-red-800 to-amber-800 border-2 border-l-0 border-amber-300 rounded-r-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-start"
+                className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-bl from-red-900/85 via-red-950/80 to-amber-900/85 backdrop-blur-md border-2 border-l-0 border-amber-300/90 rounded-r-2xl shadow-2xl z-20 overflow-hidden pointer-events-none flex items-center justify-start"
               >
                 {/* White inner paper tear fibers texture */}
                 <div className="absolute left-0 top-0 bottom-0 w-2 bg-amber-100 shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
@@ -369,37 +342,15 @@ export const SharedCardView: React.FC<SharedCardViewProps> = ({ cardData, onRese
               </motion.div>
             </div>
 
-            {isOpening ? (
-              <div className="flex flex-col items-center gap-2.5 w-full">
-                <div className="w-full bg-gradient-to-r from-amber-300 via-orange-400 to-amber-500 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-sm sm:text-base flex flex-col items-center justify-center gap-1.5 shadow-xl border-2 border-amber-200">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-red-950 animate-spin" />
-                    চিঠি খোলা হচ্ছে... ({countdown}s)
-                  </div>
-                  <div className="w-full bg-red-950/20 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-red-900 h-full transition-all duration-1000 ease-linear rounded-full"
-                      style={{ width: `${((10 - countdown) / 10) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSkipCountdown}
-                  className="text-xs text-amber-300 hover:text-amber-100 underline decoration-amber-400/60 transition-colors"
-                >
-                  ⚡ এখনই দেখুন (স্কিপ করুন)
-                </button>
-              </div>
-            ) : (
-              <button
-                id="open-card-bird-btn"
-                onClick={handleOpenCard}
-                className="w-full bg-gradient-to-r from-amber-300 via-orange-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-base flex items-center justify-center gap-2 shadow-xl shadow-red-950/60 transition-all transform hover:scale-105 active:scale-95 border-2 border-amber-200"
-              >
-                <Sparkles className="w-5 h-5 text-red-950" /> চিঠি খুলুন ✉️
-              </button>
-            )}
+            <button
+              id="open-card-bird-btn"
+              onClick={handleOpenCard}
+              disabled={isOpening}
+              className="w-full bg-gradient-to-r from-amber-300 via-orange-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-stone-950 font-bold py-3.5 px-6 rounded-2xl text-base flex items-center justify-center gap-2 shadow-xl shadow-red-950/60 transition-all transform hover:scale-105 active:scale-95 border-2 border-amber-200 disabled:opacity-80"
+            >
+              <Sparkles className={`w-5 h-5 text-red-950 ${isOpening ? 'animate-spin' : ''}`} />
+              {isOpening ? 'চিঠি খোলা হচ্ছে... 🌸' : 'চিঠি খুলুন ✉️'}
+            </button>
           </motion.div>
         ) : (
           /* Opened Greeting Card View */

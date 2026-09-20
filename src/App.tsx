@@ -98,16 +98,16 @@ export default function App() {
       {/* Background Slideshow Images - Fixed, Clear & Vibrant */}
       {DURGA_IMAGES.map((slide, index) => (
         <div
-          key={slide}
-          className={`fixed inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
-            index === currentSlide ? 'opacity-95 scale-105' : 'opacity-0 scale-100'
+          key={`bg-slide-${index}`}
+          className={`fixed inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out z-0 ${
+            index === currentSlide ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
           }`}
           style={{ backgroundImage: `url('${slide}')`, transitionProperty: 'opacity, transform', transitionDuration: '1.5s' }}
         />
       ))}
 
-      {/* Gentle overlay so Maa Durga's face and idol remain vividly visible */}
-      <div className="fixed inset-0 bg-gradient-to-b from-stone-950/60 via-black/25 to-stone-950/65 pointer-events-none z-0" />
+      {/* Gentle subtle dark overlay so Maa Durga background images remain crystal clear */}
+      <div className="fixed inset-0 bg-gradient-to-b from-black/35 via-black/10 to-black/40 pointer-events-none z-0" />
 
       {/* Ambient Royal Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-amber-500/10 rounded-full blur-[140px] pointer-events-none z-0" />
