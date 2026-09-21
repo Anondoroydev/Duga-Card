@@ -286,7 +286,7 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto h-full flex flex-col min-h-0 py-0.5">
+    <div className="w-full max-w-6xl mx-auto h-auto lg:h-full flex flex-col min-h-0 py-0.5">
       {/* Sleek Compact Header Bar */}
       <div className="flex items-center justify-between mb-2 shrink-0 px-1">
         <div className="flex items-center gap-2">
@@ -341,9 +341,9 @@ export const CardCreator: React.FC<CardCreatorProps> = ({ onShareCard }) => {
           {/* Subtle Ambient Glow */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          <form onSubmit={handleCreateAndShare} className="flex flex-col h-full relative z-10 min-h-0">
+          <form onSubmit={handleCreateAndShare} className="flex flex-col h-auto lg:h-full relative z-10 min-h-0">
             {/* Scrollable inputs area */}
-            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3 pb-2">
+            <div className="flex-1 lg:overflow-y-auto pr-1 custom-scrollbar space-y-3 pb-2">
               {/* Row 1: Recipient and Sender */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>

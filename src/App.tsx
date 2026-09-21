@@ -113,7 +113,7 @@ export default function App() {
 
   return (
     <div 
-      className="h-screen max-h-screen w-full text-amber-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative bg-stone-950 overflow-hidden"
+      className="h-[100dvh] max-h-[100dvh] w-full text-amber-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative bg-stone-950 overflow-hidden"
     >
       {/* Background Slideshow Images - Optimized for Mobile Performance */}
       {DURGA_IMAGES.map((slide, index) => {
@@ -156,7 +156,7 @@ export default function App() {
           />
         </div>
 
-        <main className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 flex flex-col">
+        <main className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex flex-col">
           {sharedCard ? (
             <SharedCardView
               cardData={sharedCard}
