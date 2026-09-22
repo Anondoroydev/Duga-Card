@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import net from "net";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
@@ -9,7 +10,28 @@ import { getFirestore } from 'firebase-admin/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
 const app = express();
-const PORT = 3000;
+const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+
+const getAvailablePort = async (port: number): Promise<number> => {
+  return await new Promise((resolve, reject) => {
+    const tester = net.createServer();
+
+    tester.once('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(getAvailablePort(port + 1));
+        return;
+      }
+      reject(err);
+    });
+
+    tester.once('listening', () => {
+      tester.once('close', () => resolve(port));
+      tester.close();
+    });
+
+    tester.listen(port, '0.0.0.0');
+  });
+};
 
 // Initialize Firebase Admin
 if (!getApps().length) {
@@ -254,8 +276,10 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Durga Puja Greetings Server running on http://localhost:${PORT}`);
+  const port = await getAvailablePort(DEFAULT_PORT);
+
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Durga Puja Greetings Server running on http://localhost:${port}`);
   });
 }
 
